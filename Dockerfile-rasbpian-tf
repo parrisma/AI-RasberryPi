@@ -1,0 +1,55 @@
+FROM raspbian/stretch
+
+#
+# Basics
+#
+RUN apt-get update && apt-get install -y bash
+
+#
+# Python Env.
+#
+RUN apt-get update && apt-get install -y python3-pip
+
+#
+# Tensor Flow.
+#
+RUN apt-get update && apt-get install -y python3-pip
+RUN apt-get update && apt-get install -y libatlas-base-dev
+RUN pip3 install wrapt --upgrade --ignore-installed
+RUN pip3 install tensorflow
+
+#
+# Jupyter (i-python)
+#
+RUN pip3 install jupyter matplotlib
+RUN pip3 install keras
+
+#
+# Libs & Python modules specific to Pillow (Image Processing Library)
+#
+
+RUN apt-get update && apt-get install -y libtiff5-dev
+RUN apt-get update && apt-get install -y libjpeg8-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.5-dev tk8.5-dev python-tk
+RUN pip3 install pillow
+
+#
+# Interactive tools
+#
+RUN apt-get update && apt-get install -y vim
+
+#
+# Create non root user
+#
+RUN useradd -ms /bin/bash jupyter-guest && \
+    echo 'jupyter-guest:guest' | chpasswd && \
+    addgroup jupyter && \
+    usermod -a -G jupyter jupyter-guest && \
+    mkhomedir_helper jupyter-guest && \
+    chown -R :jupyter /home/jupyter-guest && \
+    chown -R jupyter-guest /home/jupyter-guest && \
+    chmod -R 770 /home/jupyter-guest
+
+#
+# Clean Up package manager cache.
+#
+RUN rm -rf /var/lib/apt/lists/*

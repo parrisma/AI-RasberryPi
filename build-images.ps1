@@ -1,0 +1,2 @@
+docker build -t parris3141/rasbpian-tf:1.3 -f Dockerfile-rasbpian-tf . --label "maintainer=Mark Parris <parris3141@gmail.com>"
+docker build -t parris3141/rasbpian-journey4:1.5 -f Dockerfile-journey4 . --label "maintainer=Mark Parris <parris3141@gmail.com>"
