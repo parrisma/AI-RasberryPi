@@ -1,10 +1,9 @@
-from random import seed
 from copy import deepcopy
 import numpy as np
+from typing import List
 
 
 class DataCenter:
-    seed(42)
     __name_i = 0
     __p_dist_i = 1
     __compute_cost_i = 2
@@ -29,6 +28,14 @@ class DataCenter:
         "HKG": ['Hong Kong', 0.05, 0.95, __low_tier_mnemonic, __rgn_asia_pac]
     }
 
+    # Probability distribution of availability of compute types
+    # gpu, compute, batch as per Core.core_type()
+    __p_dist_capacity = {
+        __top_tier_mnemonic: [0.75, 0.25, 0.00],
+        __mid_tier_mnemonic: [0.20, 0.70, 0.10],
+        __low_tier_mnemonic: [0.00, 0.20, 0.80]
+    }
+
     __mnemonics = deepcopy(list(__countries.keys()))
     __sorted_mnemonics = sorted(__mnemonics)  # return a copy
     __p_dist = list(map(lambda x: x[1], __countries.values()))
@@ -45,7 +52,11 @@ class DataCenter:
         The list of Country Mnemonics
         :return: An alphabetical list of three character country mnemonics
         """
-        return cls.__sorted_mnemonics
+        return deepcopy(cls.__sorted_mnemonics)
+
+    @property
+    def core_p_dist(self):
+        return deepcopy(self.__p_dist_capacity[self.performance_tier])
 
     @property
     def country_mnemonic(self):
@@ -53,7 +64,7 @@ class DataCenter:
         The country Mnemonic
         :return: the three character Mnemonic for the country
         """
-        return self.mnemonic
+        return deepcopy(self.mnemonic)
 
     @property
     def country_name(self):
@@ -61,7 +72,7 @@ class DataCenter:
         The long name of the country
         :return: A string of the long name of the country
         """
-        return (self.__countries[self.mnemonic])[self.__name_i]
+        return deepcopy((self.__countries[self.mnemonic])[self.__name_i])
 
     @property
     def compute_cost(self):
@@ -69,7 +80,7 @@ class DataCenter:
         The compute cost for country in range 0 to 1
         :return: A decimal in range 0 to 1 - where 1 = max unit compute cost
         """
-        return (self.__countries[self.mnemonic])[self.__compute_cost_i]
+        return deepcopy((self.__countries[self.mnemonic])[self.__compute_cost_i])
 
     @property
     def performance_tier(self):
@@ -77,7 +88,7 @@ class DataCenter:
         The performance tier of the country Top, Mid, Low
         :return: A String Mnemonic of the performance tier
         """
-        return (self.__countries[self.mnemonic])[self.__performance_tier_i]
+        return deepcopy((self.__countries[self.mnemonic])[self.__performance_tier_i])
 
     @property
     def region(self):
@@ -85,19 +96,19 @@ class DataCenter:
         The performance tier of the country Top, Mid, Low
         :return: A String Mnemonic of the performance tier
         """
-        return (self.__countries[self.mnemonic])[self.__region_i]
+        return deepcopy((self.__countries[self.mnemonic])[self.__region_i])
 
     @classmethod
     def perf_tier_mnemonic_top(cls):
-        return cls.__top_tier_mnemonic
+        return deepcopy(cls.__top_tier_mnemonic)
 
     @classmethod
     def perf_tier_mnemonic_mid(cls):
-        return cls.__mid_tier_mnemonic
+        return deepcopy(cls.__mid_tier_mnemonic)
 
     @classmethod
     def perf_tier_mnemonic_low(cls):
-        return cls.__low_tier_mnemonic
+        return deepcopy(cls.__low_tier_mnemonic)
 
     def __str__(self):
         """

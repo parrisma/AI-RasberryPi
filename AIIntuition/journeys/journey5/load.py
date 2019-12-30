@@ -90,9 +90,9 @@ class Load(ABC):
 
     @classmethod
     def __register(cls,
-                   id: str,
+                   id_to_register: str,
                    inst: 'Load') -> None:
-        cls.__all_loads[id] = inst
+        cls.__all_loads[id_to_register] = inst
         return
 
     @classmethod

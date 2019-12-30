@@ -10,8 +10,6 @@ from AIIntuition.journeys.journey5.AppOutOfMemoryException import AppOutOfMemory
 
 
 class App(Load):
-    seed(42)
-
     __pdist_compute_core_demand = [0.2, 0.6, 0.2]
     __memory_asks = [128, 64, 32, 16, 8, 2, 1]
     __psidt_memory_demand = [0.05, 0.1, 0.25, 0.3, 0.15, 0.1, 0.05, ]
@@ -23,44 +21,44 @@ class App(Load):
         for Core Type, Memory and expected load profile
         :return:
         """
-        self.__id = Load.gen_id(self)
-        self.__max_mem_demand = self.__memory_asks[np.random.choice(np.arange(0, 7), p=self.__psidt_memory_demand)]
-        self.__memory_volatility = np.random.uniform(0, 0.1)
-        self.__core_demand = Core.core_types()[np.random.choice(np.arange(0, 3), p=self.__pdist_compute_core_demand)]
-        self.__core_volatility = np.random.uniform(0, 0.25)
+        self._id = Load.gen_id(self)
+        self._max_mem_demand = self.__memory_asks[np.random.choice(np.arange(0, 7), p=self.__psidt_memory_demand)]
+        self._memory_volatility = np.random.uniform(0, 0.1)
+        self._core_demand = Core.core_types()[np.random.choice(np.arange(0, 3), p=self.__pdist_compute_core_demand)]
+        self._core_volatility = np.random.uniform(0, 0.25)
         lt = np.random.choice(np.arange(0, 4), p=self.__pdist_loads)
-        self.__load_type = Load.load_types()[lt]
-        self.__load_profile = Load.load_profiles()[self.__load_type]
-        self.__run_time_ask = np.ceil(np.random.uniform(0.0, 72.0))
+        self._load_type = Load.load_types()[lt]
+        self._load_profile = Load.load_profiles()[self._load_type]
+        self._run_time_ask = np.ceil(np.random.uniform(0.0, 72.0))
         # Properties that change during execution
-        self.__run_time_in_elapse_hours = None
-        self.__core_load = None
-        self.__compute_deficit = None
-        self.__current_mem = None
-        self.__reset()
+        self._run_time_in_elapse_hours = None
+        self._core_load = None
+        self._compute_deficit = None
+        self._current_mem = None
+        self._reset()
 
-    def __reset(self) -> None:
+    def _reset(self) -> None:
         """
         Set the application to it's initial launch state
         :return:
         """
-        self.__run_time_in_elapse_hours = self.__run_time_ask
-        self.__core_load = 1  # np.ceil(np.random.uniform(0.0, 4.0))
-        self.__compute_deficit = 0
-        self.__current_mem = 1
+        self._run_time_in_elapse_hours = self._run_time_ask
+        self._core_load = 1  # Unitary for starters
+        self._compute_deficit = 0
+        self._current_mem = 1
         return
 
     @property
     def id(self) -> str:
-        return deepcopy(self.__id)
+        return deepcopy(self._id)
 
     @property
     def load_type(self) -> str:
-        return deepcopy(self.__load_type)
+        return deepcopy(self._load_type)
 
     @property
     def core_type(self) -> str:
-        return deepcopy(self.__core_demand)
+        return deepcopy(self._core_demand)
 
     def resource_demand(self,
                         hour_of_day: int) -> List:
@@ -100,10 +98,10 @@ class App(Load):
         compute_demand = self.__compute_demand(hour_of_day)
         memory_demand = self.__memory_demand(hour_of_day)
 
-        self.__run_time_in_elapse_hours -= 1
+        self._run_time_in_elapse_hours -= 1
         if memory_demand > available_mem:
             raise AppOutOfMemoryException(self.id)
-        self.__compute_deficit += min(0, compute_demand - available_compute)
+        self._compute_deficit += min(0, compute_demand - available_compute)
         return [compute_demand, memory_demand]
 
     def __memory_demand(self,
@@ -113,12 +111,12 @@ class App(Load):
         :param hour_of_day:
         :return: Memory demand in GB
         """
-        new_mem = self.__max_mem_demand * self.__load_profile[hour_of_day]
-        new_mem *= (1 + np.random.uniform(-self.__memory_volatility, +self.__memory_volatility))
+        new_mem = self._max_mem_demand * self._load_profile[hour_of_day]
+        new_mem *= (1 + np.random.uniform(-self._memory_volatility, +self._memory_volatility))
         new_mem = math.ceil(new_mem)
-        new_mem = min(new_mem, self.__max_mem_demand)
+        new_mem = min(new_mem, self._max_mem_demand)
         new_mem = max(new_mem, 0)
-        self.__current_mem = new_mem
+        self._current_mem = new_mem
         return new_mem
 
     def __compute_demand(self,
@@ -128,16 +126,16 @@ class App(Load):
         :param hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
         :return: Compute demand as integer (units * 1 hour) - where 1 unit = 1 x GPU, Compute etc
         """
-        compute_demand = (self.__core_load * self.__load_profile[hour_of_day]) + self.__compute_deficit
+        compute_demand = (self._core_load * self._load_profile[hour_of_day]) + self._compute_deficit
         return int(np.ceil(compute_demand))
 
     def __str__(self):
         return ''.join((self.id, ': ',
-                        'load: ', self.load_type , ': ',
+                        'load: ', self.load_type, ': ',
                         'cores: ', self.core_type, ': ',
                         'Mem(Max,Curr):',
-                        str(self.__max_mem_demand), ',',
-                        str(self.__current_mem), ',',
+                        str(self._max_mem_demand), ',',
+                        str(self._current_mem), ',',
                         )
                        )
 
