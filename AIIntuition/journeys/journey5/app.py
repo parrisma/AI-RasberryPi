@@ -106,13 +106,15 @@ class App(Load):
         :return: List: Compute Demand, Current Compute, Core Type, Memory Demand for given hour of day
         & current mem utilisation
         """
+        cm = self.current_mem
+        cc = self.current_compute
         compute_demand = self.__compute_demand(hour_of_day)
         memory_demand = self.__memory_demand(hour_of_day)
         return [compute_demand,
-                self.current_compute,
+                cc,
                 self.core_type,
                 memory_demand,
-                self.current_mem
+                cm
                 ]
 
     def load_failure(self,
@@ -180,10 +182,10 @@ class App(Load):
     def __str__(self):
         return ''.join((self.id, ': ',
                         'load: ', self.load_type, ': ',
-                        'cores: ', self.core_type, ': ',
+                        'core type: ', self.core_type, ': ',
                         'Mem(Max,Curr):',
                         str(self._max_mem_demand), ',',
-                        str(self._current_mem), ',',
+                        str(self._current_mem),
                         )
                        )
 

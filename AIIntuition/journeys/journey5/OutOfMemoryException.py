@@ -2,6 +2,9 @@ from datetime import datetime
 from copy import deepcopy
 from AIIntuition.journeys.journey5.load import Load
 from AIIntuition.journeys.journey5.compute import Compute
+from AIIntuition.journeys.journey5.errorcode import ErrorCode
+from AIIntuition.journeys.journey5.log import Log
+from AIIntuition.journeys.journey5.eventtype import FailureEvent
 
 
 class OutOfMemoryException(Exception):
@@ -20,14 +23,15 @@ class OutOfMemoryException(Exception):
         self._event_time = time = datetime.now().strftime("%H:%M:%S")
         self._load = deepcopy(load)
         self._compute = deepcopy(compute)
+        self._error_code = ErrorCode.out_of_memory
 
     def __str__(self) -> str:
-        return ''.join((self._event_time, ':',
-                        'Load: ', self._load.id,
-                        ' ran out of memory on compute: ',
-                        self._compute.id
-                        )
-                       )
+        log_msg = Log.log_message(FailureEvent(),
+                                  'Load:', self._load.id,
+                                  'ran out of memory on compute:',
+                                  self._compute.id
+                                  )
+        return log_msg
 
     @property
     def load(self) -> Load:
@@ -40,3 +44,7 @@ class OutOfMemoryException(Exception):
     @property
     def event_time(self):
         return deepcopy(self._event_time)
+
+    @property
+    def error_code(self):
+        return deepcopy(self._error_code)

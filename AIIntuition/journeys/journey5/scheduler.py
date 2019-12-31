@@ -4,6 +4,8 @@ from AIIntuition.journeys.journey5.host import Host
 from AIIntuition.journeys.journey5.app import App
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
+from AIIntuition.journeys.journey5.log import Log
+from AIIntuition.journeys.journey5.eventtype import EventType, AuditEvent, FailureEvent
 
 
 class Scheduler:
@@ -19,13 +21,18 @@ class Scheduler:
         self.__num_hosts = num_hosts
         self.__num_apps = num_apps
 
-        dc = DataCenter()  # Pick a data centre according to DC distribution
-        h = Host(dc)  # Create a Host in the chosen Data Centre
-        a1 = App()
-        a2 = App()
-        h.associate_load(a1)
-        h.associate_load(a2)
+        for i in range(0, self.__num_hosts):
+            dc = DataCenter()  # Pick a data centre according to DC distribution
+            h = Host(dc)  # Create a Host in the chosen Data Centre
+
+        for i in range(0, self.__num_apps):
+            App()  # Create a new random app
+
         self._compute_iter = InfRndIter(Host.all_hosts())
+        app_list = App.all_loads()
+        for app in app_list:
+            hst = self.next_compute()
+            hst.associate_load(app)
 
     def run(self,
             num_days: int) -> None:
@@ -54,6 +61,6 @@ class Scheduler:
 
 
 if __name__ == "__main__":
-    s = Scheduler(1, 2)
+    s = Scheduler(5, 8)
     s.run(1)
-    print('Done')
+    Log.log_event(AuditEvent(), "Scheduler Complete")

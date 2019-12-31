@@ -6,6 +6,9 @@ from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.load import Load
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
+from AIIntuition.journeys.journey5.log import Log
+from AIIntuition.journeys.journey5.eventtype import EventType, AuditEvent, FailureEvent
+import numpy as np
 
 
 class Host(Compute):
@@ -24,6 +27,7 @@ class Host(Compute):
         self._inf_load_iter = None  # The infinite iterate to use when running associated loads.
         self._curr_mem = 0
         self._curr_comp = 0
+        Log.log_event(AuditEvent(), 'Host created:', self)
         return
 
     @property
@@ -59,6 +63,7 @@ class Host(Compute):
         """
         self._loads[load.id] = load
         self.__update_inf_iter()
+        Log.log_event(AuditEvent(), 'Load:', load, 'associated with host:', self)
         return
 
     def disassociate_load(self,
@@ -102,7 +107,7 @@ class Host(Compute):
 
         if ltr.done:
             self.disassociate_load(ltr)
-            print("Load: " + ltr.id + " is done Ok & removed from Host: " + self.id)
+            Log.log_event(AuditEvent(), "Load: " + ltr.id + " is done Ok & removed from Host: " + self.id)
         else:
             # Get current & required demand
             cd, cc, ct, md, cm = ltr.resource_demand(local_hour_of_day)
@@ -116,8 +121,9 @@ class Host(Compute):
                 self.disassociate_load(ltr)
                 raise e
 
-            self._curr_mem -= md
+            self._curr_mem += md
             ltr.execute(local_hour_of_day, int(1e6))
+            Log.log_event(AuditEvent(), 'Load:', ltr.id, 'executed at hour', local_hour_of_day, 'on host', self)
         return
 
     def __update_inf_iter(self) -> None:
@@ -166,9 +172,13 @@ class Host(Compute):
             (self.name, ':',
              self.type, '-',
              'Core:', str(self.core_count), '-',
-             'Mem:', str(self.max_memory)
+             'Mem:', str(self.max_memory), '- Util:',
+             self._pct(self._curr_mem, self.max_memory), '% '
              )
         )
+
+    def _pct(self, x, y) -> str:
+        return str(int((x / y) * 100))
 
 
 if __name__ == "__main__":
