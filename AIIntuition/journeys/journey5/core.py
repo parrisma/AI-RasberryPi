@@ -83,15 +83,17 @@ class Core:
 
     @classmethod
     def core_compute_equivalency(cls,
+                                 required_compute: int,
                                  required_core_type: str,
-                                 given_core_type: str) -> float:
+                                 given_core_type: str) -> int:
         """
         What is the compute equivalency between the core asked for by a Load and the available core.
+        :param required_compute: The raw compute being asked for in the required core type units
         :param required_core_type: The core type required by a Load
         :param given_core_type: The core type available from a Compute source
-        :return: The float multiplier representing the factor from required to given
+        :return: The required compute translated into equivalent units of given core type
         """
         mapping = required_core_type + given_core_type
         if mapping not in cls.__core_equivalency:
             raise ValueError('Core equivalency for [' + mapping + '] does not exist')
-        return cls.__core_equivalency[mapping]
+        return int((cls.__core_equivalency[mapping]) * required_compute)

@@ -18,6 +18,12 @@ class DataCenter:
     __rgn_north_america = 'North America'
     __rgn_asia_pac = 'Asia Pacific'
 
+    __hour_of_day_offset = {
+        __rgn_europe: 0,
+        __rgn_north_america: -5,
+        __rgn_asia_pac: +7
+    }
+
     __countries = {
         # Mnemonic (key) : name, probability of host in region, compute cost, tier, region
         "USA": ['United States', 0.2, 0.6, __mid_tier_mnemonic, __rgn_north_america],
@@ -45,6 +51,21 @@ class DataCenter:
         A country selected according to the country selection probability distribution
         """
         self.mnemonic = DataCenter.__mnemonics[np.random.choice(np.arange(0, 6), p=DataCenter.__p_dist)]
+
+    def local_hour_of_day(self,
+                          gmt_hour_of_day: int) -> int:
+        """
+        The local hour of the day for the timezone of the data center
+        :param gmt_hour_of_day: The hour of day at GMT
+        :return: The local hour of the day 0 - 23
+        """
+        os = self.__hour_of_day_offset[self.region]
+        hod = gmt_hour_of_day + os
+        if hod < 0:
+            hod += 23
+        if hod > 23:
+            hod -= 23
+        return hod
 
     @classmethod
     def country_mnemonics(cls):

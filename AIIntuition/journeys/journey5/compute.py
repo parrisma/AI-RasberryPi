@@ -1,6 +1,7 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from random import randint
+from AIIntuition.journeys.journey5.load import Load
 
 """
 Abstract Base Class for anything that can supply compute capability.  
@@ -68,6 +69,34 @@ class Compute(ABC):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def num_associated_load(self) -> int:
+        """
+        The number of Loads currently associated with this Compute
+        :return: The number of associated loads.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def associate_load(self,
+                       load: Load) -> None:
+        """
+        Associate the given load with this host such that the host will execute the load during it's run cycle.
+        :param load: The Load to associate with the Host
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_next_load(self,
+                      hour_of_day: int) -> None:
+        """
+        Randomly pick a load from the list of associated and run it - eventually all loads will be run. It is possible
+        that loads will not all be run an equal number of times.
+        :param hour_of_day: The current (local time) hour of the day
+        """
+        raise NotImplementedError
+
     @classmethod
     def __register(cls,
                    id_to_register: str,
@@ -92,12 +121,12 @@ class Compute(ABC):
         return _cid
 
     @classmethod
-    def all_hosts(cls) -> list:
+    def all_computes(cls) -> list:
         """
         Create a deepcopy list of all hosts created at this point in time.
         :return: A list of Host(s)
         """
-        host_list = []
+        compute_list = []
         for k in cls.__all_computes.keys():
-            host_list.append(deepcopy(cls.__all_computes[k]))
-        return host_list
+            compute_list.append(deepcopy(cls.__all_computes[k]))
+        return compute_list
