@@ -9,10 +9,9 @@ Abstract Base Class for anything that can supply compute capability.
 
 
 class Compute(ABC):
-    __compute_ids = {}
     MAX_COMPUTE_ID = 99999
     LEN_MAX_COMPUTE = len(str(MAX_COMPUTE_ID))
-
+    __compute_ids = {}
     __all_computes = {}
 
     @property
@@ -80,7 +79,7 @@ class Compute(ABC):
 
     @property
     @abstractmethod
-    def num_associated_load(self) -> int:
+    def num_associated_task(self) -> int:
         """
         The number of Loads currently associated with this Compute
         :return: The number of associated loads.
@@ -88,7 +87,7 @@ class Compute(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def associate_load(self,
+    def associate_task(self,
                        load: Task) -> None:
         """
         Associate the given load with this host such that the host will execute the load during it's run cycle.
@@ -97,7 +96,17 @@ class Compute(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def run_next_load(self,
+    def disassociate_task(self,
+                          load: Task) -> None:
+        """
+        Dis-Associate the given load with this host such that the host will NOT execute the load during it's run
+        cycle.
+        :param load: The Load to associate with the Host
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_next_task(self,
                       hour_of_day: int) -> None:
         """
         Randomly pick a load from the list of associated and run it - eventually all loads will be run. It is possible
@@ -108,9 +117,9 @@ class Compute(ABC):
 
     @classmethod
     def __register(cls,
-                   id_to_register: str,
+                   id: str,
                    inst: 'Compute') -> None:
-        cls.__all_computes[id_to_register] = inst
+        cls.__all_computes[id] = inst
         return
 
     @classmethod
@@ -130,12 +139,20 @@ class Compute(ABC):
         return _cid
 
     @classmethod
-    def all_computes(cls) -> list:
+    def all_compute_ids(cls) -> list:
         """
         Create a deepcopy list of all hosts created at this point in time.
         :return: A list of Host(s)
         """
-        compute_list = []
-        for k in cls.__all_computes.keys():
-            compute_list.append(deepcopy(cls.__all_computes[k]))
-        return compute_list
+        return deepcopy(list(cls.__all_computes.keys()))
+
+    @classmethod
+    def get_by_id(cls,
+                  compute_id: str) -> 'Compute':
+        """
+        Return the actual compute that matches the given id
+        :return: The Compute matching the given id
+        """
+        if compute_id not in cls.__all_computes:
+            raise ValueError('Compute id:' + compute_id + ' does not exist')
+        return cls.__all_computes[compute_id]

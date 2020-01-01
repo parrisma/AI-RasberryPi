@@ -7,7 +7,7 @@ from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
 from AIIntuition.journeys.journey5.log import Log
-from AIIntuition.journeys.journey5.eventtype import AuditEvent, ExecuteEvent, DoneEvent
+from AIIntuition.journeys.journey5.event import HostEvent
 from AIIntuition.journeys.journey5.util import Util
 
 
@@ -23,11 +23,11 @@ class Host(Compute):
         self._id = Compute.gen_compute_id(self)
         self._core = Core(self._data_center.core_p_dist)
         self._memory_available = Memory(self._core)
-        self._loads = {}
-        self._inf_load_iter = None  # The infinite iterate to use when running associated loads.
+        self._tasks = {}
+        self._inf_task_iter = None  # The infinite iterate to use when running associated tasks.
         self._curr_mem = 0
         self._curr_comp = 0
-        Log.log_event(AuditEvent(), 'Host instantiated:', self)
+        Log.log_event(HostEvent(HostEvent.HostEventType.INSTANTIATE, self), '')
         return
 
     @property
@@ -62,114 +62,115 @@ class Host(Compute):
         """
         return deepcopy(self._curr_mem)
 
-    def associate_load(self,
-                       load: Task) -> None:
+    def associate_task(self,
+                       task: Task) -> None:
         """
-        Associate the given load with this host such that the host will execute the load during it's run
+        Associate the given task with this host such that the host will execute the task during it's run
         cycle.
-        :param load: The Load to associate with the Host
+        :param task: The task to associate with the Host
         """
-        self._loads[load.id] = load
+        self._tasks[task.id] = task
         self.__update_inf_iter()
-        Log.log_event(AuditEvent(), 'Load:', load, 'associated with host:', self)
+        Log.log_event(HostEvent(HostEvent.HostEventType.ASSOCIATE, self, task), '')
         return
 
-    def disassociate_load(self,
-                          load: Task) -> None:
+    def disassociate_task(self,
+                          task: Task) -> None:
         """
-        Associate the given load with this host such that the host will execute the load during it's run
+        Dis-Associate the given task with this host such that the host will NOT execute the task during it's run
         cycle.
-        :param load: The Load to associate with the Host
+        :param task: The task to associate with the Host
         """
-        if load.id not in self._loads:
-            raise ValueError(load.id + ' is not associated with host :' + self.id)
+        if task.id not in self._tasks:
+            raise ValueError(task.id + ' is not associated with host :' + self.id)
 
-        del self._loads[load.id]
+        del self._tasks[task.id]
         self.__update_inf_iter()
 
         return
 
     @property
-    def num_associated_load(self) -> int:
+    def num_associated_task(self) -> int:
         """
-        The number of Loads currently associated with this Compute
-        :return: The number of associated loads.
+        The number of tasks currently associated with this Compute
+        :return: The number of associated tasks.
         """
-        return len(self._loads)
+        return len(self._tasks)
 
-    def run_next_load(self,
+    def run_next_task(self,
                       gmt_hour_of_day: int) -> None:
         """
-        Randomly pick a load from the list of associated and run it - eventually all loads will be run. It is possible
-        that loads will not all be run an equal number of times.
-        :param gmt_hour_of_day: The gmt hour of day at which the load is being executed
+        Randomly pick a task from the list of associated and run it - eventually all tasks will be run. It is possible
+        that tasks will not all be run an equal number of times.
+        :param gmt_hour_of_day: The gmt hour of day at which the task is being executed
         """
         local_hour_of_day = self._data_center.local_hour_of_day(gmt_hour_of_day)
 
-        if len(self._loads) == 0:
-            print("No loads to run on Host:" + self.id)
+        if len(self._tasks) == 0:
+            print("No tasks to run on Host:" + self.id)
             return
 
-        # Get next (random) load to run
-        ltr = self.__next_load_to_execute()
+        # Get next (random) task to run
+        task_to_run = self.__next_task_to_execute()
 
-        if ltr.done:
-            self.disassociate_load(ltr)
-            Log.log_event(DoneEvent(ltr, self))
+        if task_to_run.done:
+            self.disassociate_task(task_to_run)
+            Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task_to_run), '')
         else:
             # Get current & required demand
-            cd, cc, ct, md, cm = ltr.resource_demand(local_hour_of_day)
+            cd, cc, ct, md, cm = task_to_run.resource_demand(local_hour_of_day)
             self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
             self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
 
-            # Check memory which is finite & fail the load if insufficient memory is available
+            # Check memory which is finite & fail the task if insufficient memory is available
             if self._curr_mem + md > self._memory_available.size:
-                e = OutOfMemoryException(ltr, self)
-                ltr.task_failure(e)
-                self.disassociate_load(ltr)
+                e = OutOfMemoryException(task_to_run, self)
+                task_to_run.task_failure(e)
+                self.disassociate_task(task_to_run)
                 raise e
 
             self._curr_mem += md
-            ltr.execute(local_hour_of_day, int(1e6))
-            Log.log_event(ExecuteEvent(ltr, self), '')
+            task_to_run.execute(local_hour_of_day, int(1e6))
+            Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
         return
 
     def __update_inf_iter(self) -> None:
         """
-        Update the infinite iterator to reflect change to the associated loads.
+        Update the infinite iterator to reflect change to the associated tasks.
         """
-        self._inf_load_iter = InfRndIter(list(self._loads.keys()))
+        self._inf_task_iter = InfRndIter(list(self._tasks.keys()))
         return
 
-    def __next_load_to_execute(self) -> Task:
+    def __next_task_to_execute(self) -> Task:
         """
-        The random next associated load to execute
-        :return: The Load to execute
+        The random next associated task to execute
+        :return: The task to execute
         """
-        return self._loads[next(self._inf_load_iter)]
+        return self._tasks[next(self._inf_task_iter)]
 
     @classmethod
     def all_hosts(cls) -> list:
         """
-        Create a deepcopy list of all loads (Hosts) created at this point in time.
+        Return a list of all tasks (Hosts) created at this point in time.
         :return: A list of App(s)
         """
         host_list = []
-        all_comp = Compute.all_computes()
-        for comp in all_comp:
+        all_comp_ids = Compute.all_compute_ids()
+        for comp_id in all_comp_ids:
+            comp = Compute.get_by_id(comp_id)
             if isinstance(comp, Host):
-                host_list.append(deepcopy(comp))
+                host_list.append(comp)
         return host_list
 
-    def all_loads(self) -> list:
+    def all_tasks(self) -> list:
         """
-        Create a deepcopy list of all Loads associated with the host at this point in time
-        :return: A list of loads
+        Create a deepcopy list of all tasks associated with the host at this point in time
+        :return: A list of tasks
         """
-        load_list = []
-        for k in self._loads.keys():
-            load_list.append(deepcopy(self._loads[k]))
-        return load_list
+        task_list = []
+        for k in self._tasks.keys():
+            task_list.append(deepcopy(self._tasks[k]))
+        return task_list
 
     def __str__(self) -> str:
         """

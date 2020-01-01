@@ -4,9 +4,17 @@ from typing import List, Tuple
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.util import Util
+from enum import Enum
 
 
-class EventType(ABC):
+class Event(ABC):
+    class EventType(Enum):
+        AUDIT = 0
+        HOST = 1
+        TASK = 2
+        FAIL = 3
+
+    __empty_props = ([], [])
 
     @property
     @abstractmethod
@@ -33,7 +41,7 @@ class EventType(ABC):
         :param task: the task object subject of the event
         :return: List of task property labels, List of corresponding task property values as string
         """
-        lbls = ['Load: ',
+        lbls = ['Task: ',
                 'Profile: ',
                 'Pref Core: ',
                 'Curr Mem: ',
@@ -63,7 +71,7 @@ class EventType(ABC):
                 'cores: ',
                 'Mem: ',
                 'Mem Util %: ',
-                'Num Loads: ']
+                'Num Tasks: ']
 
         props = [compute.data_center,
                  str(compute.id),
@@ -71,7 +79,7 @@ class EventType(ABC):
                  str(compute.core_count),
                  str(compute.max_memory),
                  Util.to_pct(compute.current_memory, compute.max_memory),
-                 str(compute.num_associated_load)]
+                 str(compute.num_associated_task)]
 
         return lbls, props
 
@@ -96,42 +104,80 @@ class EventType(ABC):
     @classmethod
     def task_and_comp_to_str(cls,
                              preamble: Tuple[List[str], List[str]],
-                             task: Task,
-                             comp: Compute):
-        task_props = EventType.task_properties(task)
-        comp_props = EventType.compute_properties(comp)
-        as_str = ''.join(EventType.zip_and_separate(preamble, task_props, comp_props))
+                             task: Task = None,
+                             comp: Compute = None):
+        task_props = cls.__empty_props
+        if task is not None:
+            task_props = Event.task_properties(task)
+        comp_props = cls.__empty_props
+        if comp is not None:
+            comp_props = Event.compute_properties(comp)
+        as_str = ''.join(Event.zip_and_separate(preamble, task_props, comp_props))
         return as_str
 
 
-class AuditEvent(EventType):
-    @property
-    def id(self) -> int:
-        return 1
-
-    def __str__(self) -> str:
-        return 'Audit'
-
-
-class FailureEvent(EventType):
+class FailureEvent(Event):
     def __init__(self,
-                 task: Task,
-                 compute: Compute,
-                 exception_class: str):
+                 exception_class: str,
+                 task: Task = None,
+                 compute: Compute = None):
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
         self._exception_class = exception_class
 
     @property
-    def id(self) -> int:
-        return 2
+    def id(self) -> Event.EventType:
+        return Event.EventType.FAIL
 
     def __str__(self) -> str:
-        preamble = (['Event'], ['Failure:' + self._exception_class])
-        return EventType.task_and_comp_to_str(preamble, self._task, self._compute)
+        preamble = (['Event: '], ['Failure-' + self._exception_class])
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute)
 
 
-class ExecuteEvent(EventType):
+class SchedulerEvent(Event):
+    class SchedulerEventType(Enum):
+        START = 'Start'
+        COMPLETE = 'Complete'
+        NEW_DAY = 'New Day'
+
+    def __init__(self,
+                 host_event_type: SchedulerEventType):
+        self._scheduler_event_type = host_event_type
+
+    @property
+    def id(self) -> Event.EventType:
+        return Event.EventType.HOST
+
+    def __str__(self) -> str:
+        preamble = ([self.__class__.__name__ + ':'], [self._scheduler_event_type.value])
+        return Event.task_and_comp_to_str(preamble)
+
+
+class HostEvent(Event):
+    class HostEventType(Enum):
+        INSTANTIATE = 'Instantiate'
+        DONE = 'Done'
+        EXECUTE = 'Execute'
+        ASSOCIATE = 'Associate'
+
+    def __init__(self,
+                 host_event_type: HostEventType,
+                 compute: Compute,
+                 task: Task = None):
+        self._host_event_type = host_event_type
+        self._task = deepcopy(task)
+        self._compute = deepcopy(compute)
+
+    @property
+    def id(self) -> Event.EventType:
+        return Event.EventType.HOST
+
+    def __str__(self) -> str:
+        preamble = ([self.__class__.__name__ + ':'], [self._host_event_type.value])
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute)
+
+
+class TaskEvent(Event):
 
     def __init__(self,
                  task: Task,
@@ -140,49 +186,9 @@ class ExecuteEvent(EventType):
         self._compute = deepcopy(compute)
 
     @property
-    def id(self) -> int:
-        return 3
+    def id(self) -> Event.EventType:
+        return Event.EventType.TASK
 
     def __str__(self) -> str:
-        preamble = (['Event'], ['Execute:'])
-        return EventType.task_and_comp_to_str(preamble, self._task, self._compute)
-
-
-class TaskEvent(EventType):
-
-    def __init__(self,
-                 task: Task,
-                 compute: Compute):
-        self._task = deepcopy(task)
-        self._compute = deepcopy(compute)
-
-    @property
-    def id(self) -> int:
-        return 4
-
-    def __str__(self) -> str:
-        task_props = EventType.task_properties(self._task)
-        comp_props = EventType.compute_properties(self._compute)
-        preamble = ['Event', 'Exception:']
-        as_str = ''.join(EventType.zip_and_separate(preamble, *task_props, *comp_props))
-        return as_str
-
-
-class DoneEvent(EventType):
-
-    def __init__(self,
-                 task: Task,
-                 compute: Compute):
-        self._load = deepcopy(task)
-        self._compute = deepcopy(compute)
-
-    @property
-    def id(self) -> int:
-        return 5
-
-    def __str__(self) -> str:
-        task_props = EventType.task_properties(self._task)
-        comp_props = EventType.compute_properties(self._compute)
-        preamble = ['Event', 'Exception:']
-        as_str = ''.join(EventType.zip_and_separate(preamble, *task_props, *comp_props))
-        return as_str
+        preamble = (['Event: '], ['Task'])
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute)

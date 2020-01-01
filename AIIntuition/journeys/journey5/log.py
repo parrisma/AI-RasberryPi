@@ -1,11 +1,11 @@
 from datetime import datetime
-from AIIntuition.journeys.journey5.eventtype import EventType, AuditEvent, FailureEvent
+from AIIntuition.journeys.journey5.event import Event, FailureEvent
 
 
 class Log:
     @classmethod
     def log_event(cls,
-                  event: EventType,
+                  event: Event,
                   *argv) -> None:
         """
         Post a standard form log message to the current sink of the Log Class/
@@ -16,7 +16,7 @@ class Log:
 
     @classmethod
     def log_message(cls,
-                    event: EventType,
+                    event: Event,
                     *argv) -> str:
         """
         Return a standard form log message
@@ -32,6 +32,5 @@ class Log:
 
 
 if __name__ == "__main__":
-    Log.log_event(AuditEvent(), 'Hello World')
-    Log.log_event(AuditEvent(), 'Hello', 'World')
+    ve = ValueError()
     Log.log_event(FailureEvent(), 'Hello', 3142, 'World')

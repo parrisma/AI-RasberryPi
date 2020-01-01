@@ -1,4 +1,5 @@
-class ErrorCode:
-    @property
-    def out_of_memory(self):
-        return 1
+from enum import Enum
+
+
+class ErrorCode(Enum):
+    OUT_OF_MEMORY = 1

@@ -3,7 +3,7 @@ import numpy as np
 from typing import List
 
 """
-Non instantiable class to capture the characteristics of compute Core types (GPU, CPU etc) 
+Capture the characteristics of compute Core types (GPU, CPU etc) 
 """
 
 
@@ -22,6 +22,12 @@ class Core:
         __batch_type + __batch_type: 1.0,
         __batch_type + __compute_type: 2.0,
         __batch_type + __gpu_type: 2.0
+    }
+
+    __core_cost = {
+        __gpu_type: 1.0,
+        __compute_type: 0.5,
+        __batch_type: 0.25
     }
 
     # Cores, distribution
@@ -48,6 +54,10 @@ class Core:
     @property
     def num_core(self):
         return deepcopy(self._core_count)
+
+    @property
+    def core_cost(self):
+        return deepcopy(self.__core_cost[self._core_type])
 
     @classmethod
     def gpu_mnemonic(cls) -> str:

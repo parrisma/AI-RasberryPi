@@ -116,17 +116,17 @@ class App(Task):
 
     # ToDo: return immutable tuple not a list
     def resource_demand(self,
-                        hour_of_day: int) -> List[int]:
+                        local_hour_of_day: int) -> List[int]:
         """
         Return the amount of memory and compute needed given the hour of the day.
-        :param hour_of_day: Local time - hour of day as integer 0 - 23
+        :param local_hour_of_day: Local time - hour of day as integer 0 - 23
         :return: List: Compute Demand, Current Compute, Core Type, Memory Demand for given hour of day
         & current mem utilisation
         """
         cm = self.current_mem
         cc = self.current_compute
-        compute_demand = self.__compute_demand(hour_of_day)
-        memory_demand = self.__memory_demand(hour_of_day)
+        compute_demand = self.__compute_demand(local_hour_of_day)
+        memory_demand = self.__memory_demand(local_hour_of_day)
         return [compute_demand,
                 cc,
                 self.core_type,
@@ -159,26 +159,26 @@ class App(Task):
         return r
 
     def execute(self,
-                hour_of_day: int,
+                local_hour_of_day: int,
                 available_compute: int) -> None:
         """
         Run a compute cycle of the application.
-        :param hour_of_day: The hour of day (local time)
+        :param local_hour_of_day: The hour of day (local time)
         :param available_compute: The compute capacity available to the App
         """
         if not self.done:
             self._run_time_in_elapse_hours -= 1
-            self._compute_deficit += min(0, self.__compute_demand(hour_of_day) - available_compute)
+            self._compute_deficit += min(0, self.__compute_demand(local_hour_of_day) - available_compute)
         return
 
     def __memory_demand(self,
-                        hour_of_day: int) -> int:
+                        local_hour_of_day: int) -> int:
         """
         Given the hour of the day what is the memory demand of the App.
-        :param hour_of_day:
+        :param local_hour_of_day: local hour of day
         :return: Memory demand in GB
         """
-        new_mem = self._max_mem_demand * self._load_profile[hour_of_day]
+        new_mem = self._max_mem_demand * self._load_profile[local_hour_of_day]
         new_mem *= (1 + np.random.uniform(-self._memory_volatility, +self._memory_volatility))
         new_mem = math.ceil(new_mem)
         new_mem = min(new_mem, self._max_mem_demand)
@@ -187,14 +187,14 @@ class App(Task):
         return new_mem
 
     def __compute_demand(self,
-                         hour_of_day: int) -> int:
+                         local_hour_of_day: int) -> int:
         """
         What is the total compute demand given the hour of the day.
-        :param hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
+        :param local_hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
         :return: Compute demand as integer (units * 1 hour) - where 1 unit = 1 x GPU, Compute etc
         """
-        compute_demand = (self._core_load * self._load_profile[hour_of_day]) + self._compute_deficit
-        return int(np.ceil(compute_demand))
+        compute_demand = (self._core_load * self._load_profile[local_hour_of_day]) + self._compute_deficit
+        return int(np.ceil(compute_demand * 1.0))
 
     def __str__(self):
         return ''.join((self.id, ': ',

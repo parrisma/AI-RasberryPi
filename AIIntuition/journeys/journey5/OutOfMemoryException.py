@@ -4,7 +4,7 @@ from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.errorcode import ErrorCode
 from AIIntuition.journeys.journey5.log import Log
-from AIIntuition.journeys.journey5.eventtype import FailureEvent
+from AIIntuition.journeys.journey5.event import FailureEvent
 
 
 class OutOfMemoryException(Exception):
@@ -13,34 +13,34 @@ class OutOfMemoryException(Exception):
     """
 
     def __init__(self,
-                 load: Task,
+                 task: Task,
                  compute: Compute):
         """
         Record and Out of Memory issue for Load on Compute
-        :param load: The load that required more memory than was available & thus failed
+        :param task: The task that required more memory than was available & thus failed
         :param compute: The Compute that was unable to supply the required memory
         """
         self._event_time = time = datetime.now().strftime("%H:%M:%S")
-        self._load = deepcopy(load)
-        self._compute = deepcopy(compute)
-        self._error_code = ErrorCode.out_of_memory
+        self._task = task
+        self._compute = compute
+        self._error_code = ErrorCode.OUT_OF_MEMORY
 
     def __str__(self) -> str:
-        log_msg = Log.log_message(FailureEvent(self._load, self._compute, self.__class__.__name__))
+        log_msg = Log.log_message(FailureEvent(self.__class__.__name__, self._task, self._compute))
         return log_msg
 
     @property
-    def load(self) -> Task:
-        return deepcopy(self._load)
+    def task(self) -> Task:
+        return self._task
 
     @property
     def compute(self) -> Compute:
-        return deepcopy(self._compute)
+        return self._compute
 
     @property
-    def event_time(self):
+    def event_time(self) -> str:
         return deepcopy(self._event_time)
 
     @property
-    def error_code(self):
-        return deepcopy(self._error_code)
+    def error_code(self) -> int:
+        return self._error_code.value
