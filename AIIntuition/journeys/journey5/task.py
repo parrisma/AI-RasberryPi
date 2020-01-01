@@ -118,6 +118,16 @@ class Task(ABC):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def effective_compute(self) -> int:
+        """
+        The effective compute demand of the Load on the Compute resource it is running on. This can be greater or
+        less then the current_compute if the compute is being supplied by a non preferred core type
+        :return: The amount of compute
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def resource_demand(self,
                         hour_of_day: int) -> List[int]:
@@ -150,12 +160,16 @@ class Task(ABC):
 
     @abstractmethod
     def execute(self,
-                hour_of_day: int,
-                available_compute: int) -> None:
+                local_hour_of_day: int,
+                available_mem: int,
+                available_compute: int,
+                compute_efficacy) -> None:
         """
         Run a compute cycle of the application.
-        :param hour_of_day: The hour of day (local time)
+        :param local_hour_of_day: The hour of day (local time)
+        :param available_mem: The memory allocated to
         :param available_compute: The compute capacity available to the App
+        :param compute_efficacy: The translation applied if requirec core type not available on associated compute
         """
         raise NotImplementedError
 

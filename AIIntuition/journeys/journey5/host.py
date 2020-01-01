@@ -128,9 +128,13 @@ class Host(Compute):
                 task_to_run.task_failure(e)
                 self.disassociate_task(task_to_run)
                 raise e
-
             self._curr_mem += md
-            task_to_run.execute(local_hour_of_day, int(1e6))
+
+            # Check how much compute is available
+            ef = Core.core_compute_equivalency(required_core_type=ct, given_core_type=self._core.core_type)
+            cd = min(cd, (self._core.num_core - self._curr_comp))
+
+            task_to_run.execute(local_hour_of_day, md, cd, ef)
             Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
         return
 

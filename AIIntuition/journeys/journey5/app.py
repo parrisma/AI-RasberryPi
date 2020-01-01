@@ -36,6 +36,7 @@ class App(Task):
         self._compute_deficit = None
         self._current_mem = None
         self._current_comp = None
+        self._effective_comp = None
         self._failed = None
         self._fail_reason = None
         self._reset()
@@ -46,10 +47,11 @@ class App(Task):
         :return:
         """
         self._run_time_in_elapse_hours = self._run_time_ask
-        self._core_load = 1  # Unitary for starters
+        self._core_load = np.random.choice(np.arange(0, 10))
         self._compute_deficit = 0
         self._current_mem = 0
         self._current_comp = 0
+        self._effective_comp = 0
         self._failed = False
         self._fail_reason = None
         return
@@ -160,15 +162,25 @@ class App(Task):
 
     def execute(self,
                 local_hour_of_day: int,
-                available_compute: int) -> None:
+                available_mem: int,
+                available_compute: int,
+                compute_efficacy) -> None:
         """
         Run a compute cycle of the application.
         :param local_hour_of_day: The hour of day (local time)
+        :param available_mem: The memory allocated to
         :param available_compute: The compute capacity available to the App
+        :param compute_efficacy: The translation applied if requirec core type not available on associated compute
         """
+        self._current_mem = available_mem
+        self._current_comp = available_compute
         if not self.done:
             self._run_time_in_elapse_hours -= 1
-            self._compute_deficit += min(0, self.__compute_demand(local_hour_of_day) - available_compute)
+            self._effective_comp = int(np.ceil(self._current_comp * compute_efficacy))
+            self._compute_deficit += min(0,
+                                         self.__compute_demand(local_hour_of_day) -
+                                         self._effective_comp
+                                         )
         return
 
     def __memory_demand(self,
