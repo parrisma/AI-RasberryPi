@@ -3,12 +3,12 @@ from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.core import Core
 from AIIntuition.journeys.journey5.memory import Memory
 from AIIntuition.journeys.journey5.compute import Compute
-from AIIntuition.journeys.journey5.load import Load
+from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
 from AIIntuition.journeys.journey5.log import Log
-from AIIntuition.journeys.journey5.eventtype import EventType, AuditEvent, FailureEvent
-import numpy as np
+from AIIntuition.journeys.journey5.eventtype import AuditEvent, ExecuteEvent, DoneEvent
+from AIIntuition.journeys.journey5.util import Util
 
 
 class Host(Compute):
@@ -27,7 +27,7 @@ class Host(Compute):
         self._inf_load_iter = None  # The infinite iterate to use when running associated loads.
         self._curr_mem = 0
         self._curr_comp = 0
-        Log.log_event(AuditEvent(), 'Host created:', self)
+        Log.log_event(AuditEvent(), 'Host instantiated:', self)
         return
 
     @property
@@ -54,8 +54,16 @@ class Host(Compute):
     def max_memory(self) -> int:
         return deepcopy(self._memory_available.size)
 
+    @property
+    def current_memory(self) -> int:
+        """
+        The current memory utilisation
+        :return: The current memory utilisation in MB
+        """
+        return deepcopy(self._curr_mem)
+
     def associate_load(self,
-                       load: Load) -> None:
+                       load: Task) -> None:
         """
         Associate the given load with this host such that the host will execute the load during it's run
         cycle.
@@ -67,7 +75,7 @@ class Host(Compute):
         return
 
     def disassociate_load(self,
-                          load: Load) -> None:
+                          load: Task) -> None:
         """
         Associate the given load with this host such that the host will execute the load during it's run
         cycle.
@@ -107,7 +115,7 @@ class Host(Compute):
 
         if ltr.done:
             self.disassociate_load(ltr)
-            Log.log_event(AuditEvent(), "Load: " + ltr.id + " is done Ok & removed from Host: " + self.id)
+            Log.log_event(DoneEvent(ltr, self))
         else:
             # Get current & required demand
             cd, cc, ct, md, cm = ltr.resource_demand(local_hour_of_day)
@@ -117,13 +125,13 @@ class Host(Compute):
             # Check memory which is finite & fail the load if insufficient memory is available
             if self._curr_mem + md > self._memory_available.size:
                 e = OutOfMemoryException(ltr, self)
-                ltr.load_failure(e)
+                ltr.task_failure(e)
                 self.disassociate_load(ltr)
                 raise e
 
             self._curr_mem += md
             ltr.execute(local_hour_of_day, int(1e6))
-            Log.log_event(AuditEvent(), 'Load:', ltr.id, 'executed at hour', local_hour_of_day, 'on host', self)
+            Log.log_event(ExecuteEvent(ltr, self), '')
         return
 
     def __update_inf_iter(self) -> None:
@@ -133,7 +141,7 @@ class Host(Compute):
         self._inf_load_iter = InfRndIter(list(self._loads.keys()))
         return
 
-    def __next_load_to_execute(self) -> Load:
+    def __next_load_to_execute(self) -> Task:
         """
         The random next associated load to execute
         :return: The Load to execute
@@ -172,13 +180,10 @@ class Host(Compute):
             (self.name, ':',
              self.type, '-',
              'Core:', str(self.core_count), '-',
-             'Mem:', str(self.max_memory), '- Util:',
-             self._pct(self._curr_mem, self.max_memory), '% '
+             'Mem:', str(self.max_memory), '-Mem Util:',
+             Util.to_pct(self._curr_mem, self.max_memory), '% '
              )
         )
-
-    def _pct(self, x, y) -> str:
-        return str(int((x / y) * 100))
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ class Scheduler:
             App()  # Create a new random app
 
         self._compute_iter = InfRndIter(Host.all_hosts())
-        app_list = App.all_loads()
+        app_list = App.all_tasks()
         for app in app_list:
             hst = self.next_compute()
             hst.associate_load(app)
@@ -63,4 +63,4 @@ class Scheduler:
 if __name__ == "__main__":
     s = Scheduler(5, 8)
     s.run(1)
-    Log.log_event(AuditEvent(), "Scheduler Complete")
+    Log.log_event(AuditEvent(), "Scheduler Stopped after allotted run time ")

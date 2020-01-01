@@ -5,10 +5,11 @@ import math
 import numpy as np
 
 from AIIntuition.journeys.journey5.core import Core
-from AIIntuition.journeys.journey5.load import Load
+from AIIntuition.journeys.journey5.task import Task
+from AIIntuition.journeys.journey5.util import Util
 
 
-class App(Load):
+class App(Task):
     __pdist_compute_core_demand = [0.2, 0.6, 0.2]
     __memory_asks = [128, 64, 32, 16, 8, 2, 1]
     __psidt_memory_demand = [0.05, 0.1, 0.25, 0.3, 0.15, 0.1, 0.05, ]
@@ -20,14 +21,14 @@ class App(Load):
         for Core Type, Memory and expected load profile
         :return:
         """
-        self._id = Load.gen_id(self)
+        self._id = Task.gen_id(self)
         self._max_mem_demand = self.__memory_asks[np.random.choice(np.arange(0, 7), p=self.__psidt_memory_demand)]
         self._memory_volatility = np.random.uniform(0, 0.1)
         self._core_demand = Core.core_types()[np.random.choice(np.arange(0, 3), p=self.__pdist_compute_core_demand)]
         self._core_volatility = np.random.uniform(0, 0.25)
         lt = np.random.choice(np.arange(0, 4), p=self.__pdist_loads)
-        self._load_type = Load.load_types()[lt]
-        self._load_profile = Load.load_profiles()[self._load_type]
+        self._load_type = Task.activity_types()[lt]
+        self._load_profile = Task.activity_profiles()[self._load_type]
         self._run_time_ask = np.ceil(np.random.uniform(0.0, 72.0))
         # Properties that change during execution
         self._run_time_in_elapse_hours = None
@@ -58,7 +59,7 @@ class App(Load):
         return deepcopy(self._id)
 
     @property
-    def load_type(self) -> str:
+    def task_type(self) -> str:
         return deepcopy(self._load_type)
 
     @property
@@ -97,6 +98,22 @@ class App(Load):
         """
         return deepcopy(self._current_comp)
 
+    @property
+    def run_time(self) -> int:
+        """
+        The total number of hours the load has to run for
+        :return: The total runtime in hours
+        """
+        return deepcopy(self._run_time_ask)
+
+    @property
+    def curr_run_time(self) -> int:
+        """
+        The number of hours the load has been running for
+        :return: The current runtime in hours (0 => load done)
+        """
+        return deepcopy(self._run_time_in_elapse_hours)
+
     # ToDo: return immutable tuple not a list
     def resource_demand(self,
                         hour_of_day: int) -> List[int]:
@@ -117,7 +134,7 @@ class App(Load):
                 cm
                 ]
 
-    def load_failure(self,
+    def task_failure(self,
                      reason: Exception = None) -> None:
         """
         Set the load to failre state
@@ -181,11 +198,12 @@ class App(Load):
 
     def __str__(self):
         return ''.join((self.id, ': ',
-                        'load: ', self.load_type, ': ',
+                        'profile: ', self.task_type, ': ',
                         'core type: ', self.core_type, ': ',
                         'Mem(Max,Curr):',
-                        str(self._max_mem_demand), ',',
-                        str(self._current_mem),
+                        str(self.current_mem), ' - Progress:',
+                        Util.to_pct((self.run_time - self.curr_run_time),
+                                    self.run_time), '%'
                         )
                        )
 
@@ -194,7 +212,7 @@ if __name__ == "__main__":
     app = None
     for i in range(1, 100):
         app = App()
-    for a in Load.loads():
+    for a in Task.loads():
         print(a)
     for h in range(0, 23):
         app.execute(h, 1000, 1000)

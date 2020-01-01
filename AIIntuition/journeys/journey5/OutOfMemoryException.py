@@ -1,6 +1,6 @@
 from datetime import datetime
 from copy import deepcopy
-from AIIntuition.journeys.journey5.load import Load
+from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.errorcode import ErrorCode
 from AIIntuition.journeys.journey5.log import Log
@@ -13,7 +13,7 @@ class OutOfMemoryException(Exception):
     """
 
     def __init__(self,
-                 load: Load,
+                 load: Task,
                  compute: Compute):
         """
         Record and Out of Memory issue for Load on Compute
@@ -26,15 +26,11 @@ class OutOfMemoryException(Exception):
         self._error_code = ErrorCode.out_of_memory
 
     def __str__(self) -> str:
-        log_msg = Log.log_message(FailureEvent(),
-                                  'Load:', self._load.id,
-                                  'ran out of memory on compute:',
-                                  self._compute.id
-                                  )
+        log_msg = Log.log_message(FailureEvent(self._load, self._compute, self.__class__.__name__))
         return log_msg
 
     @property
-    def load(self) -> Load:
+    def load(self) -> Task:
         return deepcopy(self._load)
 
     @property

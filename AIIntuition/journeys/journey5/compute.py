@@ -1,7 +1,7 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from random import randint
-from AIIntuition.journeys.journey5.load import Load
+from AIIntuition.journeys.journey5.task import Task
 
 """
 Abstract Base Class for anything that can supply compute capability.  
@@ -71,6 +71,15 @@ class Compute(ABC):
 
     @property
     @abstractmethod
+    def current_memory(self) -> int:
+        """
+        The current memory utilisation
+        :return: The current memory utilisation in MB
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def num_associated_load(self) -> int:
         """
         The number of Loads currently associated with this Compute
@@ -80,7 +89,7 @@ class Compute(ABC):
 
     @abstractmethod
     def associate_load(self,
-                       load: Load) -> None:
+                       load: Task) -> None:
         """
         Associate the given load with this host such that the host will execute the load during it's run cycle.
         :param load: The Load to associate with the Host

@@ -9,19 +9,19 @@ Abstract Base Class for anything that can be considered a compute load e.g. an A
 """
 
 
-class Load(ABC):
-    __MAX_LOAD_ID = 999999
-    __LEN_MAX_LOAD = len(str(__MAX_LOAD_ID))
-    __load_ids = {}
-    __all_loads = {}
+class Task(ABC):
+    __MAX_TASK_ID = 999999
+    __LEN_MAX_TASK = len(str(__MAX_TASK_ID))
+    __task_ids = {}
+    __all_tasks = {}
 
-    __load_flat = [0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33,
+    __task_flat = [0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33,
                    0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33]
-    __load_st_ed = [0.1, 0.3, 0.8, 0.9, 1, 0.9, 0.6, 0.2, 0.2, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.8, 0.9, 1, 0.9, 0.7,
+    __task_st_ed = [0.1, 0.3, 0.8, 0.9, 1, 0.9, 0.6, 0.2, 0.2, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.8, 0.9, 1, 0.9, 0.7,
                     0.3, 0.2, 0.1]
-    __load_mid = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.8, 0.9, 1, 0.9, 0.6, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+    __task_mid = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.8, 0.9, 1, 0.9, 0.6, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
                   0.1, 0.1, 0.1]
-    __load_saw = [0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4,
+    __task_saw = [0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4,
                   0.6, 0.9, 0.1, 0.1]
 
     __flat_s = 'Flat'
@@ -29,12 +29,12 @@ class Load(ABC):
     __midday_s = 'Midday'
     __saw_s = 'Saw'
 
-    __load_types_l = [__flat_s, __st_ed_s, __midday_s, __saw_s]
-    __loads = {
-        __flat_s: __load_flat,
-        __st_ed_s: __load_st_ed,
-        __midday_s: __load_mid,
-        __saw_s: __load_saw
+    __activity_types_l = [__flat_s, __st_ed_s, __midday_s, __saw_s]
+    __activity = {
+        __flat_s: __task_flat,
+        __st_ed_s: __task_st_ed,
+        __midday_s: __task_mid,
+        __saw_s: __task_saw
     }
 
     @property
@@ -48,7 +48,7 @@ class Load(ABC):
 
     @property
     @abstractmethod
-    def load_type(self) -> str:
+    def task_type(self) -> str:
         """
         The type of load profile the load exhibits
         :return: String name of the load profile (in set returned by Load.load_types())
@@ -75,6 +75,24 @@ class Load(ABC):
 
     @property
     @abstractmethod
+    def run_time(self) -> int:
+        """
+        The total number of hours the load has to run for
+        :return: The total runtime in hours
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def curr_run_time(self) -> int:
+        """
+        The number of hours the load has been running for
+        :return: The current runtime in hours (0 => load done)
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def done(self) -> bool:
         """
         Is the current load finished processing
@@ -88,15 +106,6 @@ class Load(ABC):
         """
         Is the current load in a failed state
         :return: True if Load has failed during processing, else False
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def current_mem(self) -> int:
-        """
-        The current memory utilisation of the Load on the Compute resource it is running on
-        :return: The amount of memory in MG (int)
         """
         raise NotImplementedError
 
@@ -121,7 +130,7 @@ class Load(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_failure(self,
+    def task_failure(self,
                      reason: Exception = None) -> None:
         """
         Set the load to failre state
@@ -151,59 +160,59 @@ class Load(ABC):
         raise NotImplementedError
 
     @classmethod
-    def load_types(cls) -> List[str]:
+    def activity_types(cls) -> List[str]:
         """
         List of types of load profile over a 24 hour period
         :return: List of load types as string
         """
-        return deepcopy(cls.__load_types_l)
+        return deepcopy(cls.__activity_types_l)
 
     @classmethod
-    def load_profiles(cls) -> Dict[str, List[float]]:
+    def activity_profiles(cls) -> Dict[str, List[float]]:
         """
         Dictionary of load profiles
         :return: Dictionary of load profiles keyed by load type
         """
-        return deepcopy(cls.__loads)
+        return deepcopy(cls.__activity)
 
     @classmethod
-    def loads(cls) -> List['Load']:
+    def loads(cls) -> List['Task']:
         """
         List of currently registered loads
         :return: List of registered Loads
         """
-        return deepcopy(list(cls.__all_loads.values()))
+        return deepcopy(list(cls.__all_tasks.values()))
 
     @classmethod
     def __register(cls,
                    id_to_register: str,
-                   inst: 'Load') -> None:
-        cls.__all_loads[id_to_register] = inst
+                   inst: 'Task') -> None:
+        cls.__all_tasks[id_to_register] = inst
         return
 
     @classmethod
     def gen_id(cls,
-               inst: 'Load') -> str:
+               inst: 'Task') -> str:
         """
         Generate a random & unique host id in range 0 to Load.MAX_LOAD_ID that has not already been
         allocated.
         :return: Host id as string with leading zeros, string length always = 5
         """
-        rnd_app_id = randint(0, cls.__MAX_LOAD_ID)
-        while rnd_app_id not in cls.__load_ids:
-            rnd_app_id = randint(0, cls.__MAX_LOAD_ID)
-            cls.__load_ids[rnd_app_id] = True
-        _id = str(rnd_app_id).zfill(cls.__LEN_MAX_LOAD)
+        rnd_app_id = randint(0, cls.__MAX_TASK_ID)
+        while rnd_app_id not in cls.__task_ids:
+            rnd_app_id = randint(0, cls.__MAX_TASK_ID)
+            cls.__task_ids[rnd_app_id] = True
+        _id = str(rnd_app_id).zfill(cls.__LEN_MAX_TASK)
         cls.__register(_id, inst)
         return deepcopy(_id)
 
     @classmethod
-    def all_loads(cls) -> list:
+    def all_tasks(cls) -> list:
         """
         Create a deepcopy list of all Loads created at this point in time.
         :return: A list of Loads
         """
-        load_list = []
-        for k in cls.__all_loads.keys():
-            load_list.append(deepcopy(cls.__all_loads[k]))
-        return load_list
+        task_list = []
+        for k in cls.__all_tasks.keys():
+            task_list.append(deepcopy(cls.__all_tasks[k]))
+        return task_list
