@@ -46,6 +46,7 @@ class Event(ABC):
                 'Pref Core: ',
                 'Curr Mem: ',
                 'Run Time: ',
+                'Deficit: ',
                 'Time Left: ']
 
         props = [str(task.id),
@@ -53,6 +54,7 @@ class Event(ABC):
                  task.core_type,
                  str(task.current_mem),
                  str(task.run_time),
+                 cls._flt(task.compute_deficit),
                  str(task.curr_run_time)]
 
         return lbls, props
@@ -71,6 +73,8 @@ class Event(ABC):
                 'cores: ',
                 'Mem: ',
                 'Mem Util %: ',
+                'Comp: ',
+                'Comp Util %: ',
                 'Num Tasks: ']
 
         props = [compute.data_center,
@@ -79,6 +83,8 @@ class Event(ABC):
                  str(compute.core_count),
                  str(compute.max_memory),
                  Util.to_pct(compute.current_memory, compute.max_memory),
+                 str(compute.max_compute),
+                 Util.to_pct(compute.current_compute, compute.max_compute),
                  str(compute.num_associated_task)]
 
         return lbls, props
@@ -95,10 +101,10 @@ class Event(ABC):
         :return: List[ key1.1, value1.1, Sep, key1.2, value1.2, Sep, .. Key1.n, value1.n, Sep, Key2.1, Value2.1, Sep ..]
         """
         f = []
-        for t in argv:
-            k, v = t
-            s = [', '] * len(k)
-            f = f + [e for l in list(zip(k, v, s)) for e in l]
+        for tupl in argv:
+            ky, vl = tupl
+            s = [separator] * len(ky)
+            f = f + [e for l in list(zip(ky, vl, s)) for e in l]  # Flatten out the tuples
         return f
 
     @classmethod
@@ -114,6 +120,10 @@ class Event(ABC):
             comp_props = Event.compute_properties(comp)
         as_str = ''.join(Event.zip_and_separate(preamble, task_props, comp_props))
         return as_str
+
+    @classmethod
+    def _flt(cls, x: float) -> str:
+        return '{:.4f}'.format(x * 1.0)
 
 
 class FailureEvent(Event):
@@ -159,6 +169,8 @@ class HostEvent(Event):
         DONE = 'Done'
         EXECUTE = 'Execute'
         ASSOCIATE = 'Associate'
+        DISASSOCIATE = 'Disassociate'
+        STATUS = 'Status'
 
     def __init__(self,
                  host_event_type: HostEventType,
@@ -178,10 +190,14 @@ class HostEvent(Event):
 
 
 class TaskEvent(Event):
+    class TaskEventType(Enum):
+        STATUS = 'Status'
 
     def __init__(self,
+                 task_event_type: TaskEventType,
                  task: Task,
-                 compute: Compute):
+                 compute: Compute = None):
+        self._task_event_type = task_event_type
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
 
@@ -190,5 +206,5 @@ class TaskEvent(Event):
         return Event.EventType.TASK
 
     def __str__(self) -> str:
-        preamble = (['Event: '], ['Task'])
+        preamble = ([self.__class__.__name__ + ':'], [self._task_event_type.value])
         return Event.task_and_comp_to_str(preamble, self._task, self._compute)

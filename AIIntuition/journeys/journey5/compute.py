@@ -1,4 +1,5 @@
 from abc import ABC, abstractclassmethod, abstractmethod
+from typing import List
 from copy import deepcopy
 from random import randint
 from AIIntuition.journeys.journey5.task import Task
@@ -79,6 +80,24 @@ class Compute(ABC):
 
     @property
     @abstractmethod
+    def max_compute(self) -> float:
+        """
+        The maximum amount of compute capability of the given compute resource
+        :return: The max compute
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def current_compute(self) -> float:
+        """
+        The current compute utilisation
+        :return: The current compute utilisation
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def num_associated_task(self) -> int:
         """
         The number of Loads currently associated with this Compute
@@ -117,9 +136,9 @@ class Compute(ABC):
 
     @classmethod
     def __register(cls,
-                   id: str,
+                   compute_id: str,
                    inst: 'Compute') -> None:
-        cls.__all_computes[id] = inst
+        cls.__all_computes[compute_id] = inst
         return
 
     @classmethod
@@ -139,7 +158,7 @@ class Compute(ABC):
         return _cid
 
     @classmethod
-    def all_compute_ids(cls) -> list:
+    def all_compute_ids(cls) -> List:
         """
         Create a deepcopy list of all hosts created at this point in time.
         :return: A list of Host(s)

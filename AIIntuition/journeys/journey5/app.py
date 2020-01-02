@@ -101,6 +101,23 @@ class App(Task):
         return deepcopy(self._current_comp)
 
     @property
+    def effective_compute(self) -> int:
+        """
+        The effective compute demand of the Load on the Compute resource it is running on. This can be greater or
+        less then the current_compute if the compute is being supplied by a non preferred core type
+        :return: The amount of compute
+        """
+        return deepcopy(self._effective_comp)
+
+    @property
+    def compute_deficit(self) -> int:
+        """
+        The number of compute cycles behind the task is based on demand and the number of executions
+        :return: The amount of compute deficit
+        """
+        return deepcopy(self._compute_deficit)
+
+    @property
     def run_time(self) -> int:
         """
         The total number of hours the load has to run for
@@ -145,6 +162,7 @@ class App(Task):
         """
         self._failed = True
         self._fail_reason = reason
+        self._reset()
         return
 
     @property
@@ -172,15 +190,16 @@ class App(Task):
         :param available_compute: The compute capacity available to the App
         :param compute_efficacy: The translation applied if requirec core type not available on associated compute
         """
+        if self.id == '471029':
+            print('x')
         self._current_mem = available_mem
         self._current_comp = available_compute
         if not self.done:
             self._run_time_in_elapse_hours -= 1
-            self._effective_comp = int(np.ceil(self._current_comp * compute_efficacy))
-            self._compute_deficit += min(0,
-                                         self.__compute_demand(local_hour_of_day) -
-                                         self._effective_comp
-                                         )
+            self._effective_comp = self._current_comp * compute_efficacy
+            self._compute_deficit = max(0,
+                                        self.__compute_demand(local_hour_of_day) - self._effective_comp
+                                        )
         return
 
     def __memory_demand(self,
@@ -199,14 +218,14 @@ class App(Task):
         return new_mem
 
     def __compute_demand(self,
-                         local_hour_of_day: int) -> int:
+                         local_hour_of_day: int) -> float:
         """
         What is the total compute demand given the hour of the day.
         :param local_hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
         :return: Compute demand as integer (units * 1 hour) - where 1 unit = 1 x GPU, Compute etc
         """
         compute_demand = (self._core_load * self._load_profile[local_hour_of_day]) + self._compute_deficit
-        return int(np.ceil(compute_demand * 1.0))
+        return compute_demand
 
     def __str__(self):
         return ''.join((self.id, ': ',

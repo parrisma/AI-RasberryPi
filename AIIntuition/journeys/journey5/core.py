@@ -12,6 +12,7 @@ class Core:
     __compute_type = 'CPU'
     __batch_type = 'BAT'
 
+    '''
     __core_equivalency = {
         __gpu_type + __gpu_type: 1.0,
         __gpu_type + __compute_type: 0.25,
@@ -22,6 +23,19 @@ class Core:
         __batch_type + __batch_type: 1.0,
         __batch_type + __compute_type: 2.0,
         __batch_type + __gpu_type: 2.0
+    }
+    '''
+
+    __core_equivalency = {
+        __gpu_type + __gpu_type: 1.0,
+        __gpu_type + __compute_type: 1.0,
+        __gpu_type + __batch_type: 1.0,
+        __compute_type + __compute_type: 1.0,
+        __compute_type + __gpu_type: 1.0,
+        __compute_type + __batch_type: 1.0,
+        __batch_type + __batch_type: 1.0,
+        __batch_type + __compute_type: 1.0,
+        __batch_type + __gpu_type: 1.0
     }
 
     __core_cost = {

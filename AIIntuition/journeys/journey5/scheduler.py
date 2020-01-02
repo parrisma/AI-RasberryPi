@@ -4,8 +4,9 @@ from AIIntuition.journeys.journey5.host import Host
 from AIIntuition.journeys.journey5.app import App
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
+from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToCompleteException
 from AIIntuition.journeys.journey5.log import Log
-from AIIntuition.journeys.journey5.event import SchedulerEvent
+from AIIntuition.journeys.journey5.event import SchedulerEvent, HostEvent, TaskEvent
 from AIIntuition.journeys.journey5.randompolicy import RandomPolicy
 
 
@@ -53,9 +54,13 @@ class Scheduler:
                     for i in range(0, hst.num_associated_task):
                         try:
                             hst.run_next_task(gmt_hour_of_day)
-                        except OutOfMemoryException as e:
+                        except (OutOfMemoryException, FailedToCompleteException) as e:
                             print(e)
-                            self._policy.select_optimal_compute(e.task).associate_task(e.task)
+                            self._policy.select_optimal_compute(e.task).associate_task(e.task)  # re schedule
+            for h in Host.all_hosts():
+                Log.log_event(HostEvent(HostEvent.HostEventType.STATUS, h))
+                for t in h.all_tasks():
+                    Log.log_event(TaskEvent(TaskEvent.TaskEventType.STATUS, t))
 
     def next_compute(self) -> Compute:
         """
@@ -67,6 +72,6 @@ class Scheduler:
 
 
 if __name__ == "__main__":
-    s = Scheduler(5, 8)
-    s.run(4)
+    s = Scheduler(5, 20)
+    s.run(15)
     Log.log_event(SchedulerEvent(SchedulerEvent.SchedulerEventType.COMPLETE), "Scheduler done after allotted run time ")

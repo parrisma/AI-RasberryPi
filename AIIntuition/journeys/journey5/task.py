@@ -111,7 +111,7 @@ class Task(ABC):
 
     @property
     @abstractmethod
-    def current_compute(self) -> int:
+    def current_compute(self) -> float:
         """
         The current compute demand of the Load on the Compute resource it is running on
         :return: The amount of compute
@@ -120,11 +120,20 @@ class Task(ABC):
 
     @property
     @abstractmethod
-    def effective_compute(self) -> int:
+    def effective_compute(self) -> float:
         """
         The effective compute demand of the Load on the Compute resource it is running on. This can be greater or
         less then the current_compute if the compute is being supplied by a non preferred core type
         :return: The amount of compute
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def compute_deficit(self) -> float:
+        """
+        The number of compute cycles behind the task is based on demand and the number of executions
+        :return: The amount of compute deficit
         """
         raise NotImplementedError
 

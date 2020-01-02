@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import List
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.core import Core
 from AIIntuition.journeys.journey5.memory import Memory
@@ -6,6 +7,7 @@ from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
+from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToCompleteException
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import HostEvent
 from AIIntuition.journeys.journey5.util import Util
@@ -62,6 +64,24 @@ class Host(Compute):
         """
         return deepcopy(self._curr_mem)
 
+    @property
+    def max_compute(self) -> float:
+        """
+        The maximum amount of compute capability of the given compute resource
+        :return: The max compute
+        """
+        # Num Core is the number of compute units of the current core type as such it is the max compute
+        # capability.
+        return deepcopy(self._core.num_core)
+
+    @property
+    def current_compute(self) -> float:
+        """
+        The current compute utilisation
+        :return: The current compute utilisation
+        """
+        return deepcopy(self._curr_comp)
+
     def associate_task(self,
                        task: Task) -> None:
         """
@@ -86,6 +106,7 @@ class Host(Compute):
 
         del self._tasks[task.id]
         self.__update_inf_iter()
+        Log.log_event(HostEvent(HostEvent.HostEventType.DISASSOCIATE, self, task), '')
 
         return
 
@@ -113,15 +134,21 @@ class Host(Compute):
         # Get next (random) task to run
         task_to_run = self.__next_task_to_execute()
 
-        if task_to_run.done:
-            self.disassociate_task(task_to_run)
-            Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task_to_run), '')
-        else:
-            # Get current & required demand
-            cd, cc, ct, md, cm = task_to_run.resource_demand(local_hour_of_day)
-            self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
-            self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
+        # Get current & required demand - return current resources
+        cd, cc, ct, md, cm = task_to_run.resource_demand(local_hour_of_day)
+        self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
+        self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
 
+        if task_to_run.done:
+            if task_to_run.compute_deficit > 0:
+                e = FailedToCompleteException(task_to_run, self)
+                task_to_run.task_failure(e)
+                self.disassociate_task(task_to_run)
+                raise e
+            else:
+                Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task_to_run), '')
+                self.disassociate_task(task_to_run)
+        else:
             # Check memory which is finite & fail the task if insufficient memory is available
             if self._curr_mem + md > self._memory_available.size:
                 e = OutOfMemoryException(task_to_run, self)
@@ -133,6 +160,7 @@ class Host(Compute):
             # Check how much compute is available
             ef = Core.core_compute_equivalency(required_core_type=ct, given_core_type=self._core.core_type)
             cd = min(cd, (self._core.num_core - self._curr_comp))
+            self._curr_comp += cd
 
             task_to_run.execute(local_hour_of_day, md, cd, ef)
             Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
@@ -153,7 +181,7 @@ class Host(Compute):
         return self._tasks[next(self._inf_task_iter)]
 
     @classmethod
-    def all_hosts(cls) -> list:
+    def all_hosts(cls) -> List['Host']:
         """
         Return a list of all tasks (Hosts) created at this point in time.
         :return: A list of App(s)
@@ -166,7 +194,7 @@ class Host(Compute):
                 host_list.append(comp)
         return host_list
 
-    def all_tasks(self) -> list:
+    def all_tasks(self) -> List:
         """
         Create a deepcopy list of all tasks associated with the host at this point in time
         :return: A list of tasks
