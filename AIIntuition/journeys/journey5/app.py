@@ -25,7 +25,7 @@ class App(Task):
         self._load_profile = task_profile.load_profile
         self._load_shape = task_profile.load_shape
         self._run_time_ask = task_profile.run_time
-        self._core_load = np.random.choice(np.arange(0, 10))
+        self._core_load = np.random.choice(np.arange(0, 10)) # ToDo - Add to task profile & to __str__
 
         # Properties that change during execution
         self._run_time_in_elapse_hours = None

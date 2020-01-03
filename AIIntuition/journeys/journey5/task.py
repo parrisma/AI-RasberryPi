@@ -200,7 +200,7 @@ class Task(ABC):
         return deepcopy(cls.__activity_types_l)
 
     @classmethod
-    def activity_profiles(cls) -> Dict['Task.LoadProfile', List[float]]:
+    def load_shapes(cls) -> Dict['Task.LoadProfile', List[float]]:
         """
         Dictionary of load profiles
         :return: Dictionary of load profiles keyed by load type

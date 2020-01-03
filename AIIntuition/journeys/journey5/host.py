@@ -2,7 +2,6 @@ from copy import deepcopy
 from typing import List
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.core import Core
-from AIIntuition.journeys.journey5.memory import Memory
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
@@ -11,22 +10,23 @@ from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToComp
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import HostEvent
 from AIIntuition.journeys.journey5.util import Util
-from AIIntuition.journeys.journey5.randomcoreprofile import RandomCoreProfile
 from AIIntuition.journeys.journey5.cputype import CPUType
+from AIIntuition.journeys.journey5.computeprofile import ComputeProfile
 
 
 class Host(Compute):
 
     def __init__(self,
-                 data_center: DataCenter):
+                 data_center: DataCenter,
+                 compute_profile: ComputeProfile):
         """
         Create a new random host according to the defined probability distributions
         Data Center, Type & capacity.
         """
         self._data_center = data_center
         self._id = Compute.gen_compute_id(self)
-        self._core = Core(RandomCoreProfile())  # ToDo - Host Profile.
-        self._memory_available = Memory(self._core)
+        self._core = compute_profile.core
+        self._memory_available = compute_profile.mem
         self._tasks = {}
         self._inf_task_iter = None  # The infinite iterate to use when running associated tasks.
         self._curr_mem = 0
@@ -221,8 +221,10 @@ class Host(Compute):
         )
 
 
+from AIIntuition.journeys.journey5.randomhostprofile import RandomHostProfile
+
 if __name__ == "__main__":
     for i in range(0, 100):
         c = DataCenter(DataCenter.CountryCode.ICELAND)
-        h = Host(c)
+        h = Host(c, RandomHostProfile())
         print(h)

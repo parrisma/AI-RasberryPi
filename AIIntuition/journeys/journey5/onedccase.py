@@ -7,7 +7,12 @@ from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.policy import Policy
 from AIIntuition.journeys.journey5.randompolicy import RandomPolicy
 from AIIntuition.journeys.journey5.case import Case
-from AIIntuition.journeys.journey5.randomtaskprofile import RandomTaskProfile
+from AIIntuition.journeys.journey5.fixedtaskprofile import FixedTaskProfile
+from AIIntuition.journeys.journey5.fixedhostprofile import FixedHostProfile
+from AIIntuition.journeys.journey5.fixedcoreprofile import FixedCoreProfile
+from AIIntuition.journeys.journey5.cputype import CPUType
+from AIIntuition.journeys.journey5.task import Task
+from AIIntuition.journeys.journey5.core import Core
 
 
 class OneDCCase(Case):
@@ -32,11 +37,17 @@ class OneDCCase(Case):
         policy = RandomPolicy()  # Host selected at random
 
         dc = DataCenter(DataCenter.CountryCode.ICELAND)  # Create a single DC Only.
-        _ = Host(dc)  # Create a single host
+        fhp = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=2)), mem=16)
+        _ = Host(dc, fhp)  # Create a single host
 
-        rtp = RandomTaskProfile()
+        ftp = FixedTaskProfile(max_mem=4,
+                               mem_vol=0,
+                               cpu_type=CPUType.GENERAL,
+                               load_profile=Task.LoadProfile.SAW_TOOTH,
+                               run_time=72)
+
         for i in range(0, 1):
-            App(rtp)  # Create a new random app
+            App(ftp)  # Create a new random app
 
         app_list = App.all_tasks()
         for app in app_list:

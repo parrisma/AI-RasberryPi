@@ -16,7 +16,7 @@ class TaskProfile(ABC):
 
     @property
     @abstractmethod
-    def mem_volatility(self) -> int:
+    def mem_volatility(self) -> float:
         """
         The volatility in range 0.0 to 1.0 of the memory demand with respect to the task load profile
         """

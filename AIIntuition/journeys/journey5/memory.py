@@ -13,9 +13,15 @@ class Memory:
     }
 
     def __init__(self,
-                 core: Core):
-        _mem_options, _p_dist = Memory.__p_dist_type[core.core_type]
-        self._size = _mem_options[np.random.choice(np.arange(0, 3), p=_p_dist)]
+                 core: Core = None,
+                 mem: int = None):
+        self._size = mem
+        if core is not None:
+            _mem_options, _p_dist = Memory.__p_dist_type[core.core_type]
+            self._size = _mem_options[np.random.choice(np.arange(0, 3), p=_p_dist)]
+
+        if self._size is None:
+            raise ValueError("Must specify a Core or memory size in MB (int)")
 
     @property
     def size(self) -> int:
