@@ -1,3 +1,7 @@
+from enum import Enum
+from typing import Tuple
+from collections.abc import Iterable
+from functools import partial
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.host import Host
@@ -7,10 +11,14 @@ from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryExcept
 from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToCompleteException
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import SchedulerEvent, HostEvent, TaskEvent
+from AIIntuition.journeys.journey5.policy import Policy
 from AIIntuition.journeys.journey5.randompolicy import RandomPolicy
+from AIIntuition.journeys.journey5.randomcase import RandomCase
 
 
 class Scheduler:
+    class TestCases(Enum):
+        RANDOM = partial(RandomCase.set_up)
 
     def __init__(self,
                  num_hosts: int,
@@ -22,20 +30,11 @@ class Scheduler:
         """
         self._num_hosts = num_hosts
         self._num_apps = num_apps
-        self._policy = RandomPolicy()
+        self._policy = None
+        self._compute_iter = None
 
-        for i in range(0, self._num_hosts):
-            dc = DataCenter()  # Pick a data centre according to DC distribution
-            h = Host(dc)  # Create a Host in the chosen Data Centre
-
-        for i in range(0, self._num_apps):
-            App()  # Create a new random app
-
-        self._compute_iter = InfRndIter(Host.all_hosts())
-        app_list = App.all_tasks()
-        for app in app_list:
-            hst = self._policy.select_optimal_compute(app)
-            hst.associate_task(app)
+        self._policy, self._compute_iter = Scheduler.TestCases.RANDOM.value(self._num_hosts,
+                                                                            self._num_hosts)
 
     def run(self,
             num_days: int) -> None:
