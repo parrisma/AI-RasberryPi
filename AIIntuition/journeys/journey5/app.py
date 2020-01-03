@@ -1,38 +1,34 @@
-from random import seed
 from copy import deepcopy
 from typing import List
 import math
 import numpy as np
-
-from AIIntuition.journeys.journey5.core import Core
+from AIIntuition.journeys.journey5.cputype import CPUType
 from AIIntuition.journeys.journey5.task import Task
+from AIIntuition.journeys.journey5.taskprofile import TaskProfile
+from AIIntuition.journeys.journey5.randomtaskprofile import RandomTaskProfile
 from AIIntuition.journeys.journey5.util import Util
 
 
 class App(Task):
-    __pdist_compute_core_demand = [0.2, 0.6, 0.2]
-    __memory_asks = [128, 64, 32, 16, 8, 2, 1]
-    __psidt_memory_demand = [0.05, 0.1, 0.25, 0.3, 0.15, 0.1, 0.05, ]
-    __pdist_loads = [.25, .25, .25, .25]
 
-    def __init__(self):
+    def __init__(self,
+                 task_profile: TaskProfile):
         """
         Create an application with a profile according to the prob distribution of demand
         for Core Type, Memory and expected load profile
         :return:
         """
         self._id = Task.gen_id(self)
-        self._max_mem_demand = self.__memory_asks[np.random.choice(np.arange(0, 7), p=self.__psidt_memory_demand)]
-        self._memory_volatility = np.random.uniform(0, 0.1)
-        self._core_demand = Core.core_types()[np.random.choice(np.arange(0, 3), p=self.__pdist_compute_core_demand)]
-        self._core_volatility = np.random.uniform(0, 0.25)
-        lt = np.random.choice(np.arange(0, 4), p=self.__pdist_loads)
-        self._load_type = Task.activity_types()[lt]
-        self._load_profile = Task.activity_profiles()[self._load_type]
-        self._run_time_ask = np.ceil(np.random.uniform(0.0, 72.0))
+        self._max_mem_demand = task_profile.max_mem
+        self._memory_volatility = task_profile.mem_volatility
+        self._core_demand = task_profile.cpu_type
+        self._load_profile = task_profile.load_profile
+        self._load_shape = task_profile.load_shape
+        self._run_time_ask = task_profile.run_time
+        self._core_load = np.random.choice(np.arange(0, 10))
+
         # Properties that change during execution
         self._run_time_in_elapse_hours = None
-        self._core_load = None
         self._compute_deficit = None
         self._current_mem = None
         self._current_comp = None
@@ -47,7 +43,6 @@ class App(Task):
         :return:
         """
         self._run_time_in_elapse_hours = self._run_time_ask
-        self._core_load = np.random.choice(np.arange(0, 10))
         self._compute_deficit = 0
         self._current_mem = 0
         self._current_comp = 0
@@ -61,11 +56,11 @@ class App(Task):
         return deepcopy(self._id)
 
     @property
-    def task_type(self) -> str:
-        return deepcopy(self._load_type)
+    def task_type(self) -> Task.LoadProfile:
+        return deepcopy(self._load_profile)
 
     @property
-    def core_type(self) -> str:
+    def core_type(self) -> CPUType:
         return deepcopy(self._core_demand)
 
     @property
@@ -190,8 +185,6 @@ class App(Task):
         :param available_compute: The compute capacity available to the App
         :param compute_efficacy: The translation applied if requirec core type not available on associated compute
         """
-        if self.id == '471029':
-            print('x')
         self._current_mem = available_mem
         self._current_comp = available_compute
         if not self.done:
@@ -209,7 +202,7 @@ class App(Task):
         :param local_hour_of_day: local hour of day
         :return: Memory demand in GB
         """
-        new_mem = self._max_mem_demand * self._load_profile[local_hour_of_day]
+        new_mem = self._max_mem_demand * self._load_shape[local_hour_of_day]
         new_mem *= (1 + np.random.uniform(-self._memory_volatility, +self._memory_volatility))
         new_mem = math.ceil(new_mem)
         new_mem = min(new_mem, self._max_mem_demand)
@@ -224,13 +217,13 @@ class App(Task):
         :param local_hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
         :return: Compute demand as integer (units * 1 hour) - where 1 unit = 1 x GPU, Compute etc
         """
-        compute_demand = (self._core_load * self._load_profile[local_hour_of_day]) + self._compute_deficit
+        compute_demand = (self._core_load * self._load_shape[local_hour_of_day]) + self._compute_deficit
         return compute_demand
 
     def __str__(self):
         return ''.join((self.id, ': ',
-                        'profile: ', self.task_type, ': ',
-                        'core type: ', self.core_type, ': ',
+                        'profile: ', str(self.task_type), ': ',
+                        'core type: ', str(self.core_type), ': ',
                         'Mem(Max,Curr):',
                         str(self.current_mem), ' - Progress:',
                         Util.to_pct((self.run_time - self.curr_run_time),
@@ -242,9 +235,9 @@ class App(Task):
 if __name__ == "__main__":
     app = None
     for i in range(1, 100):
-        app = App()
+        app = App(RandomTaskProfile())
     for a in Task.loads():
         print(a)
     for h in range(0, 23):
-        app.execute(h, 1000, 1000)
+        app.execute(h, 1000, 1000, 1)
         print(app)

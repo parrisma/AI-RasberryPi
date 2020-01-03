@@ -1,6 +1,7 @@
 from copy import deepcopy
-import numpy as np
-from typing import List
+from AIIntuition.journeys.journey5.cputype import CPUType
+from AIIntuition.journeys.journey5.coreprofile import CoreProfile
+from AIIntuition.journeys.journey5.randomcoreprofile import RandomCoreProfile
 
 """
 Capture the characteristics of compute Core types (GPU, CPU etc) 
@@ -8,10 +9,6 @@ Capture the characteristics of compute Core types (GPU, CPU etc)
 
 
 class Core:
-    __gpu_type = 'GPU'
-    __compute_type = 'CPU'
-    __batch_type = 'BAT'
-
     '''
     __core_equivalency = {
         __gpu_type + __gpu_type: 1.0,
@@ -27,88 +24,50 @@ class Core:
     '''
 
     __core_equivalency = {
-        __gpu_type + __gpu_type: 1.0,
-        __gpu_type + __compute_type: 1.0,
-        __gpu_type + __batch_type: 1.0,
-        __compute_type + __compute_type: 1.0,
-        __compute_type + __gpu_type: 1.0,
-        __compute_type + __batch_type: 1.0,
-        __batch_type + __batch_type: 1.0,
-        __batch_type + __compute_type: 1.0,
-        __batch_type + __gpu_type: 1.0
+        CPUType.GPU + CPUType.GPU: 1.0,
+        CPUType.GPU + CPUType.GENERAL: 1.0,
+        CPUType.GPU + CPUType.BATCH: 1.0,
+        CPUType.GENERAL + CPUType.GENERAL: 1.0,
+        CPUType.GENERAL + CPUType.GPU: 1.0,
+        CPUType.GENERAL + CPUType.BATCH: 1.0,
+        CPUType.BATCH + CPUType.BATCH: 1.0,
+        CPUType.BATCH + CPUType.GENERAL: 1.0,
+        CPUType.BATCH + CPUType.GPU: 1.0
     }
 
     __core_cost = {
-        __gpu_type: 1.0,
-        __compute_type: 0.5,
-        __batch_type: 0.25
-    }
-
-    # Cores, distribution
-    __p_dist_type = {
-        __gpu_type: [[16, 8, 4], [0.1, 0.8, 0.1]],
-        __compute_type: [[8, 4, 2], [0.7, 0.2, 0.1]],
-        __batch_type: [[4, 2, 1], [0.1, 0.8, 0.1]]
+        CPUType.GPU: 1.0,
+        CPUType.GENERAL: 0.5,
+        CPUType.BATCH: 0.25
     }
 
     def __init__(self,
-                 p_dist_core_types: List[float]):
+                 core_profile: CoreProfile):
         """
-        Create a new compute core - the core type is allocated given the supplied probability distribution
-        :param p_dist_core_types: a 1 by 3 probability distribution over core_types [gpu, cpu, batch]
+        Create a new compute core - as defined by the passed Core Profile.
         """
-        self._core_type = self.core_types()[np.random.choice(np.arange(0, 3), p=p_dist_core_types)]
-        _nc, _p_dist = self.__p_dist_type[self._core_type]
-        self._core_count = _nc[np.random.choice(np.arange(0, 3), p=_p_dist)]
+        self._core_type = core_profile.core_type
+        self._core_count = core_profile.core_count
+
+    def __str__(self):
+        return str(self._core_count) + ' of: ' + str(self._core_type.value)
 
     @property
-    def core_type(self):
+    def core_type(self) -> CPUType:
         return deepcopy(self._core_type)
 
     @property
-    def num_core(self):
+    def num_core(self) -> int:
         return deepcopy(self._core_count)
 
     @property
-    def core_cost(self):
+    def core_cost(self) -> float:
         return deepcopy(self.__core_cost[self._core_type])
 
     @classmethod
-    def gpu_mnemonic(cls) -> str:
-        """
-        The three character Mnemonic representing a GPU type core
-        :return: Three character String Mnemonic for GPU
-        """
-        return deepcopy(cls.__gpu_type)
-
-    @classmethod
-    def compute_mnemonic(cls) -> str:
-        """
-        The three character Mnemonic representing a general compute type core
-        :return: Three character String Mnemonic for general compute core
-        """
-        return deepcopy(cls.__compute_type)
-
-    @classmethod
-    def batch_mnemonic(cls) -> str:
-        """
-        The three character Mnemonic representing a batch (low end) type core
-        :return: Three character String Mnemonic for batch (low end) type core
-        """
-        return deepcopy(cls.__batch_type)
-
-    @classmethod
-    def core_types(cls):
-        return deepcopy([cls.__gpu_type,
-                         cls.__compute_type,
-                         cls.__batch_type
-                         ]
-                        )
-
-    @classmethod
     def core_compute_equivalency(cls,
-                                 required_core_type: str,
-                                 given_core_type: str) -> float:
+                                 required_core_type: CPUType,
+                                 given_core_type: CPUType) -> float:
         """
         What is the compute equivalency between the core asked for by a Load and the available core.
         :param required_core_type: The core type required by a Load
@@ -119,3 +78,11 @@ class Core:
         if mapping not in cls.__core_equivalency:
             raise ValueError('Core equivalency for [' + mapping + '] does not exist')
         return cls.__core_equivalency[mapping]
+
+
+if __name__ == "__main__":
+    rcp = RandomCoreProfile()
+    c = Core(rcp)
+    print(c)
+    eq = c.core_compute_equivalency(CPUType.GPU, CPUType.GENERAL)
+    print(str(eq))

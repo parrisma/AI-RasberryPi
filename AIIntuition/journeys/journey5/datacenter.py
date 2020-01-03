@@ -17,11 +17,17 @@ class DataCenter:
         LOW = 'LOW'
         MID = 'MID'
 
+        def __str__(self):
+            return self.value
+
     @unique
     class Region(Enum):
         EUROPE = 'Europe'
         NORTH_AMERICA = 'North America'
         ASIA_PACIFIC = 'Asia Pacific'
+
+        def __str__(self):
+            return self.value
 
     __hour_of_day_offset = {
         Region.EUROPE: 0,
@@ -37,6 +43,9 @@ class DataCenter:
         POLAND = 'POL'
         ICELAND = 'ISL'
         HONG_KONG = 'HKG'
+
+        def __str__(self):
+            return self.value
 
     __countries = {
         # Mnemonic (key) : name, probability of host in region, compute cost, tier, region

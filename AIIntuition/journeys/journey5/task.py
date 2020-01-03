@@ -1,4 +1,5 @@
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractmethod
+from enum import Enum, unique
 from copy import deepcopy
 from typing import List
 from typing import Dict
@@ -24,17 +25,25 @@ class Task(ABC):
     __task_saw = [0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.2, 0.4, 0.6, 0.9, 0.1, 0.1, 0.2, 0.4,
                   0.6, 0.9, 0.1, 0.1]
 
-    __flat_s = 'Flat'
-    __st_ed_s = 'Sod-Eod'
-    __midday_s = 'Midday'
-    __saw_s = 'Saw'
+    @unique
+    class LoadProfile(Enum):
+        FLAT = 'Flat'
+        START_OF_DAY_END_OF_DAY = 'Sod-Eod'
+        MIDDAY_SPIKE = 'Midday'
+        SAW_TOOTH = 'Saw'
 
-    __activity_types_l = [__flat_s, __st_ed_s, __midday_s, __saw_s]
+        def __str__(self):
+            return self.value
+
+    __activity_types_l = [LoadProfile.FLAT,
+                          LoadProfile.START_OF_DAY_END_OF_DAY,
+                          LoadProfile.MIDDAY_SPIKE,
+                          LoadProfile.SAW_TOOTH]
     __activity = {
-        __flat_s: __task_flat,
-        __st_ed_s: __task_st_ed,
-        __midday_s: __task_mid,
-        __saw_s: __task_saw
+        LoadProfile.FLAT: __task_flat,
+        LoadProfile.START_OF_DAY_END_OF_DAY: __task_st_ed,
+        LoadProfile.MIDDAY_SPIKE: __task_mid,
+        LoadProfile.SAW_TOOTH: __task_saw
     }
 
     @property
@@ -48,7 +57,7 @@ class Task(ABC):
 
     @property
     @abstractmethod
-    def task_type(self) -> str:
+    def task_type(self) -> 'Task.LoadProfile':
         """
         The type of load profile the load exhibits
         :return: String name of the load profile (in set returned by Load.load_types())
@@ -183,7 +192,7 @@ class Task(ABC):
         raise NotImplementedError
 
     @classmethod
-    def activity_types(cls) -> List[str]:
+    def activity_types(cls) -> List['Task.LoadProfile']:
         """
         List of types of load profile over a 24 hour period
         :return: List of load types as string
@@ -191,7 +200,7 @@ class Task(ABC):
         return deepcopy(cls.__activity_types_l)
 
     @classmethod
-    def activity_profiles(cls) -> Dict[str, List[float]]:
+    def activity_profiles(cls) -> Dict['Task.LoadProfile', List[float]]:
         """
         Dictionary of load profiles
         :return: Dictionary of load profiles keyed by load type

@@ -1,18 +1,22 @@
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import List, Tuple
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.util import Util
-from enum import Enum
+from enum import Enum, unique
 
 
 class Event(ABC):
+    @unique
     class EventType(Enum):
         AUDIT = 0
         HOST = 1
         TASK = 2
         FAIL = 3
+
+        def __str__(self):
+            return self.value
 
     __empty_props = ([], [])
 
@@ -50,8 +54,8 @@ class Event(ABC):
                 'Time Left: ']
 
         props = [str(task.id),
-                 task.task_type,
-                 task.core_type,
+                 str(task.task_type),
+                 str(task.core_type),
                  str(task.current_mem),
                  str(task.run_time),
                  cls._flt(task.compute_deficit),
@@ -79,7 +83,7 @@ class Event(ABC):
 
         props = [compute.data_center,
                  str(compute.id),
-                 compute.type,
+                 str(compute.type),
                  str(compute.core_count),
                  str(compute.max_memory),
                  Util.to_pct(compute.current_memory, compute.max_memory),

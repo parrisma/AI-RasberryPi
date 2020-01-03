@@ -11,6 +11,8 @@ from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToComp
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import HostEvent
 from AIIntuition.journeys.journey5.util import Util
+from AIIntuition.journeys.journey5.randomcoreprofile import RandomCoreProfile
+from AIIntuition.journeys.journey5.cputype import CPUType
 
 
 class Host(Compute):
@@ -23,7 +25,7 @@ class Host(Compute):
         """
         self._data_center = data_center
         self._id = Compute.gen_compute_id(self)
-        self._core = Core(self._data_center.core_p_dist)
+        self._core = Core(RandomCoreProfile())  # ToDo - Host Profile.
         self._memory_available = Memory(self._core)
         self._tasks = {}
         self._inf_task_iter = None  # The infinite iterate to use when running associated tasks.
@@ -33,7 +35,7 @@ class Host(Compute):
         return
 
     @property
-    def data_center(self) -> str:
+    def data_center(self) -> DataCenter.CountryCode:
         return self._data_center.country_mnemonic
 
     @property
@@ -45,7 +47,7 @@ class Host(Compute):
         return deepcopy(self._id)
 
     @property
-    def type(self) -> str:
+    def type(self) -> CPUType:
         return deepcopy(self._core.core_type)
 
     @property
@@ -211,7 +213,7 @@ class Host(Compute):
         """
         return ''.join(
             (self.name, ':',
-             self.type, '-',
+             str(self.type), '-',
              'Core:', str(self.core_count), '-',
              'Mem:', str(self.max_memory), '-Mem Util:',
              Util.to_pct(self._curr_mem, self.max_memory), '% '
@@ -221,6 +223,6 @@ class Host(Compute):
 
 if __name__ == "__main__":
     for i in range(0, 100):
-        c = DataCenter()
+        c = DataCenter(DataCenter.CountryCode.ICELAND)
         h = Host(c)
         print(h)
