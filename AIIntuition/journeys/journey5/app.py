@@ -25,7 +25,7 @@ class App(Task):
         self._load_profile = task_profile.load_profile
         self._load_shape = task_profile.load_shape
         self._run_time_ask = task_profile.run_time
-        self._core_load = np.random.choice(np.arange(0, 10)) # ToDo - Add to task profile & to __str__
+        self._core_load = task_profile.task_load
 
         # Properties that change during execution
         self._run_time_in_elapse_hours = None
@@ -127,6 +127,14 @@ class App(Task):
         :return: The current runtime in hours (0 => load done)
         """
         return deepcopy(self._run_time_in_elapse_hours)
+
+    @property
+    def load_factor(self) -> int:
+        """
+        The multiple of load placed by teh task on its associated compute resource
+        :return: String name of the load profile (in set returned by load_types())
+        """
+        return deepcopy(self._core_load)
 
     # ToDo: return immutable tuple not a list
     def resource_demand(self,

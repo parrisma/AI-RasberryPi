@@ -20,6 +20,7 @@ class RandomTaskProfile(TaskProfile):
         self._load_profile = Task.activity_types()[pt]
         self._load_shape = Task.load_shapes()[self.load_profile]
         self._run_time = np.ceil(np.random.uniform(0.0, 72.0))
+        self._load = np.random.choice(np.arange(0, 10))
 
     @property
     def max_mem(self) -> int:
@@ -32,6 +33,10 @@ class RandomTaskProfile(TaskProfile):
     @property
     def cpu_type(self) -> CPUType:
         return deepcopy(self._cpu_type)
+
+    @property
+    def task_load(self) -> int:
+        return deepcopy(self._load)
 
     @property
     def load_profile(self) -> Task.LoadProfile:

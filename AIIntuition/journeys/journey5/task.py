@@ -66,6 +66,15 @@ class Task(ABC):
 
     @property
     @abstractmethod
+    def load_factor(self) -> int:
+        """
+        The multiple of load placed by teh task on its associated compute resource
+        :return: String name of the load profile (in set returned by load_types())
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def core_type(self) -> str:
         """
         The preferred type of compute Core required by the Load (on of set returned by Core.core_types())

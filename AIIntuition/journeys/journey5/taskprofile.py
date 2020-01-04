@@ -32,6 +32,14 @@ class TaskProfile(ABC):
 
     @property
     @abstractmethod
+    def task_load(self) -> int:
+        """
+        The load factor placed on the compute
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def load_profile(self) -> Task.LoadProfile:
         """
         The Load profile (shape over time) of the Task
