@@ -1,21 +1,17 @@
-from enum import Enum
-from functools import partial
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.host import Host
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
 from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToCompleteException
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import SchedulerEvent, HostEvent, TaskEvent
-from AIIntuition.journeys.journey5.randomcase import RandomCase
-from AIIntuition.journeys.journey5.onedccase import OneDCCase
+from AIIntuition.journeys.journey5.case import Case
+from AIIntuition.journeys.journey5.testcasesetup import TestCaseSetUp
 
 
 class Scheduler:
-    class TestCases(Enum):
-        RANDOM = partial(RandomCase.set_up)
-        ONEDC = partial(OneDCCase.set_up)
 
-    def __init__(self):
+    def __init__(self,
+                 test_case: Case):
         """
         Instantiate a chosen schedule test case that sets up a schedule environment
         """
@@ -25,13 +21,11 @@ class Scheduler:
         self._compute_iter = None
 
         self._num_hosts, self._num_apps, self._policy, self._compute_iter, self._num_run_days = \
-            Scheduler.TestCases.ONEDC.value()
+            test_case.set_up()
 
     def run(self) -> None:
         """
-        Run between zero and the given max number of applications on the hosts for the given number of
-        24 hour periods
-        :param num_days: The number of 24 hour periods to run for
+        Run the test case given
         """
         Log.log_event(SchedulerEvent(SchedulerEvent.SchedulerEventType.START))
 
@@ -64,4 +58,4 @@ class Scheduler:
 
 
 if __name__ == "__main__":
-    Scheduler().run()
+    Scheduler(TestCaseSetUp.TestCase.CORE_MISMATCH.value).run()
