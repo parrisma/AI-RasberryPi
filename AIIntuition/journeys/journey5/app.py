@@ -102,7 +102,7 @@ class App(Task):
         less then the current_compute if the compute is being supplied by a non preferred core type
         :return: The amount of compute
         """
-        return deepcopy(self._effective_comp)
+        return deepcopy(self._current_comp)
 
     @property
     def compute_deficit(self) -> int:
@@ -147,12 +147,12 @@ class App(Task):
         """
         cm = self.current_mem
         cc = self.current_compute
-        compute_demand = self.__compute_demand(local_hour_of_day)
-        memory_demand = self.__memory_demand(local_hour_of_day)
-        return [compute_demand,
+        self._current_comp = self.__compute_demand(local_hour_of_day)
+        self._current_mem = self.__memory_demand(local_hour_of_day)
+        return [self.current_compute,
                 cc,
                 self.core_type,
-                memory_demand,
+                self.current_mem,
                 cm
                 ]
 
@@ -182,25 +182,16 @@ class App(Task):
         return r
 
     def execute(self,
-                local_hour_of_day: int,
-                available_mem: int,
-                available_compute: int,
-                compute_efficacy) -> None:
+                compute_available: float,
+                compute_demand: float) -> None:
         """
         Run a compute cycle of the application.
-        :param local_hour_of_day: The hour of day (local time)
-        :param available_mem: The memory allocated to
-        :param available_compute: The compute capacity available to the App
-        :param compute_efficacy: The translation applied if requirec core type not available on associated compute
+        :param compute_available: The memory allocated to
+        :param compute_demand: The compute capacity available to the App
         """
-        self._current_mem = available_mem
-        self._current_comp = available_compute
         if not self.done:
             self._run_time_in_elapse_hours -= 1
-            self._effective_comp = self._current_comp * compute_efficacy
-            self._compute_deficit = max(0,
-                                        self.__compute_demand(local_hour_of_day) - self._effective_comp
-                                        )
+            self._compute_deficit = max(0.0, (compute_demand - compute_available))
         return
 
     def __memory_demand(self,
@@ -225,7 +216,9 @@ class App(Task):
         :param local_hour_of_day: hour_of_day: Local time - hour of day as integer 0 - 23
         :return: Compute demand as integer (units * 1 hour) - where 1 unit = 1 x GPU, Compute etc
         """
-        compute_demand = (self._core_load * self._load_shape[local_hour_of_day]) + self._compute_deficit
+        compute_demand = (self._core_load *
+                          self._load_shape[local_hour_of_day]
+                          ) + self._compute_deficit
         return compute_demand
 
     def __str__(self):

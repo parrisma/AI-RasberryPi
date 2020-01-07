@@ -24,21 +24,22 @@ class Core:
     '''
 
     __core_equivalency = {
+        # Demand Core + Actual Core
         CPUType.GPU + CPUType.GPU: 1.0,
-        CPUType.GPU + CPUType.GENERAL: 1.0,
-        CPUType.GPU + CPUType.BATCH: 1.0,
+        CPUType.GPU + CPUType.GENERAL: 0.1,
+        CPUType.GPU + CPUType.BATCH: 0.05,
         CPUType.GENERAL + CPUType.GENERAL: 1.0,
-        CPUType.GENERAL + CPUType.GPU: 1.0,
-        CPUType.GENERAL + CPUType.BATCH: 1.0,
+        CPUType.GENERAL + CPUType.GPU: 2.0,
+        CPUType.GENERAL + CPUType.BATCH: 0.25,
         CPUType.BATCH + CPUType.BATCH: 1.0,
-        CPUType.BATCH + CPUType.GENERAL: 1.0,
-        CPUType.BATCH + CPUType.GPU: 1.0
+        CPUType.BATCH + CPUType.GENERAL: 2.0,
+        CPUType.BATCH + CPUType.GPU: 4.0
     }
 
     __core_cost = {
         CPUType.GPU: 1.0,
-        CPUType.GENERAL: 0.5,
-        CPUType.BATCH: 0.25
+        CPUType.GENERAL: 0.25,
+        CPUType.BATCH: 0.1
     }
 
     def __init__(self,

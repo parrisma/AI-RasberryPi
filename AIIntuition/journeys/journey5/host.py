@@ -160,11 +160,13 @@ class Host(Compute):
             self._curr_mem += md
 
             # Check how much compute is available
+            compute_available = self.max_compute - self._curr_comp
             ef = Core.core_compute_equivalency(required_core_type=ct, given_core_type=self._core.core_type)
-            cd = min(cd, (self._core.num_core - self._curr_comp))
-            self._curr_comp += cd
+            cd = cd / ef
+            self._curr_comp += min(compute_available, cd)
+            print('**** ' + str(self._curr_comp))
 
-            task_to_run.execute(local_hour_of_day, md, cd, ef)
+            task_to_run.execute(compute_available, cd)
             Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
         return
 

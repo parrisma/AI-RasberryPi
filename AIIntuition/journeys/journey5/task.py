@@ -187,16 +187,12 @@ class Task(ABC):
 
     @abstractmethod
     def execute(self,
-                local_hour_of_day: int,
-                available_mem: int,
-                available_compute: int,
-                compute_efficacy) -> None:
+                compute_available: float,
+                compute_demand: float) -> None:
         """
         Run a compute cycle of the application.
-        :param local_hour_of_day: The hour of day (local time)
-        :param available_mem: The memory allocated to
-        :param available_compute: The compute capacity available to the App
-        :param compute_efficacy: The translation applied if requirec core type not available on associated compute
+        :param compute_available: The memory allocated to
+        :param compute_demand: The compute capacity available to the App
         """
         raise NotImplementedError
 

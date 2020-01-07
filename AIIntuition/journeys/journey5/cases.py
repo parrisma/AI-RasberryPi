@@ -143,10 +143,10 @@ class Cases:
 
             policy = SequentialPolicy(h1, h1)
 
-            ftp = FixedTaskProfile(max_mem=1,
+            ftp = FixedTaskProfile(max_mem=5,
                                    mem_vol=0,
                                    cpu_type=CPUType.GENERAL,
-                                   load_factor=1,
+                                   load_factor=100,
                                    load_profile=Task.LoadProfile.SAW_TOOTH,
                                    run_time=30)
 
