@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.core import Core
 from AIIntuition.journeys.journey5.compute import Compute
@@ -127,8 +127,6 @@ class Host(Compute):
         that tasks will not all be run an equal number of times.
         :param gmt_hour_of_day: The gmt hour of day at which the task is being executed
         """
-        local_hour_of_day = self._data_center.local_hour_of_day(gmt_hour_of_day)
-
         if len(self._tasks) == 0:
             print("No tasks to run on Host:" + self.id)
             return
@@ -137,38 +135,65 @@ class Host(Compute):
         task_to_run = self.__next_task_to_execute()
 
         # Get current & required demand - return current resources
+        local_hour_of_day = self._data_center.local_hour_of_day(gmt_hour_of_day)
         cd, cc, ct, md, cm = task_to_run.resource_demand(local_hour_of_day)
         self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
         self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
 
-        if task_to_run.done:
-            if task_to_run.compute_deficit > 0:
-                e = FailedToCompleteException(task_to_run, self)
-                task_to_run.task_failure(e)
-                self.disassociate_task(task_to_run)
-                raise e
-            else:
-                Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task_to_run), '')
-                self.disassociate_task(task_to_run)
-        else:
-            # Check memory which is finite & fail the task if insufficient memory is available
-            if self._curr_mem + md > self._memory_available.size:
-                e = OutOfMemoryException(task_to_run, self)
-                task_to_run.task_failure(e)
-                self.disassociate_task(task_to_run)
-                raise e
+        if not self._task_done_ok(task_to_run):
+            self._check_memory_not_exhausted(task_to_run, md)
             self._curr_mem += md
 
-            # Check how much compute is available
-            compute_available = self.max_compute - self._curr_comp
-            ef = Core.core_compute_equivalency(required_core_type=ct, given_core_type=self._core.core_type)
-            cd = cd / ef
+            compute_available, cd = self._compute_availability(cd, ct)
             self._curr_comp += min(compute_available, cd)
-            print('**** ' + str(self._curr_comp))
 
             task_to_run.execute(compute_available, cd)
             Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
         return
+
+    def _check_memory_not_exhausted(self,
+                                    task: Task,
+                                    memory_demand: int) -> None:
+        """
+        Raise an exception if host is out of memory as a result of current task execution
+        """
+        if self._curr_mem + memory_demand > self._memory_available.size:
+            e = OutOfMemoryException(task, self)
+            task.task_failure(e)
+            self.disassociate_task(task)
+            raise e
+
+    def _task_done_ok(self,
+                      task: Task) -> bool:
+        """
+        If the current task is done and is complete just disassociate task from host else raise
+        an error
+        :return: True if task done Ok
+        """
+        done = task.done
+        if done:
+            if task.compute_deficit > 0:
+                e = FailedToCompleteException(task, self)
+                task.task_failure(e)
+                self.disassociate_task(task)
+                raise e
+            else:
+                Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task), '')
+                self.disassociate_task(task)
+        return done
+
+    def _compute_availability(self,
+                              compute_demand: float,
+                              demand_core: Core.core_type) -> Tuple[float, float]:
+        """
+        What is the available compute and what is the effective compute demand adjusted
+        for the Core the task expects vs the available core.
+        :return: available compute, adjusted compute.
+        """
+        compute_available = self.max_compute - self._curr_comp
+        ef = Core.core_compute_equivalency(required_core_type=demand_core, given_core_type=self._core.core_type)
+        cd = compute_demand / ef
+        return compute_available, cd
 
     def __update_inf_iter(self) -> None:
         """

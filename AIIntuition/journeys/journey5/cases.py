@@ -146,7 +146,7 @@ class Cases:
             ftp = FixedTaskProfile(max_mem=5,
                                    mem_vol=0,
                                    cpu_type=CPUType.GENERAL,
-                                   load_factor=100,
+                                   load_factor=20,
                                    load_profile=Task.LoadProfile.SAW_TOOTH,
                                    run_time=30)
 
