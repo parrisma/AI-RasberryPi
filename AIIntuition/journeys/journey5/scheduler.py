@@ -3,7 +3,7 @@ from AIIntuition.journeys.journey5.host import Host
 from AIIntuition.journeys.journey5.OutOfMemoryException import OutOfMemoryException
 from AIIntuition.journeys.journey5.FailedToCompleteException import FailedToCompleteException
 from AIIntuition.journeys.journey5.log import Log
-from AIIntuition.journeys.journey5.event import SchedulerEvent, HostEvent, TaskEvent
+from AIIntuition.journeys.journey5.event import SchedulerEvent, HostEvent, TaskEvent, FailureEvent
 from AIIntuition.journeys.journey5.case import Case
 from AIIntuition.journeys.journey5.testcasesetup import TestCaseSetUp
 
@@ -38,7 +38,7 @@ class Scheduler:
                         try:
                             hst.run_next_task(gmt_hour_of_day)
                         except (OutOfMemoryException, FailedToCompleteException) as e:
-                            print(e)
+                            Log.log_event(FailureEvent(exception=e, compute=e.compute, task=e.task))
                             self._policy.select_optimal_compute(e.task).associate_task(e.task)  # re schedule
             for h in Host.all_hosts():
                 Log.log_event(HostEvent(HostEvent.HostEventType.STATUS, h))

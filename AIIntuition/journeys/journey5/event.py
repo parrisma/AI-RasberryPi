@@ -52,6 +52,7 @@ class Event(ABC):
                 'Curr Mem: ',
                 'Run Time: ',
                 'Deficit: ',
+                'Cost: ',
                 'Time Left: ']
 
         props = [str(task.id),
@@ -61,6 +62,7 @@ class Event(ABC):
                  str(task.current_mem),
                  str(task.run_time),
                  cls._flt(task.compute_deficit),
+                 cls._flt(task.cost),
                  str(task.curr_run_time)]
 
         return lbls, props
@@ -96,6 +98,19 @@ class Event(ABC):
         return lbls, props
 
     @classmethod
+    def exception_properties(cls,
+                             exception: Exception) -> Tuple[List, List]:
+        """
+        Extract all relevant properties from given exception for event reporting
+        :param exception: the exception object subject of the event
+        :return: List of compute property labels, List of corresponding exception property values as string
+        """
+        lbls = ['Error: ']
+        props = [str(exception)]
+
+        return lbls, props
+
+    @classmethod
     def zip_and_separate(cls,
                          *argv,
                          separator: str = ', '):
@@ -117,14 +132,19 @@ class Event(ABC):
     def task_and_comp_to_str(cls,
                              preamble: Tuple[List[str], List[str]],
                              task: Task = None,
-                             comp: Compute = None):
+                             comp: Compute = None,
+                             exception: Exception = None):
         task_props = cls.__empty_props
         if task is not None:
             task_props = Event.task_properties(task)
         comp_props = cls.__empty_props
         if comp is not None:
             comp_props = Event.compute_properties(comp)
-        as_str = ''.join(Event.zip_and_separate(preamble, task_props, comp_props))
+        exception_props = cls.__empty_props
+        if exception is not None:
+            exception_props = Event.exception_properties(exception)
+
+        as_str = ''.join(Event.zip_and_separate(preamble, task_props, comp_props, exception_props))
         return as_str
 
     @classmethod
@@ -134,12 +154,13 @@ class Event(ABC):
 
 class FailureEvent(Event):
     def __init__(self,
-                 exception_class: str,
+                 exception: Exception,
                  task: Task = None,
                  compute: Compute = None):
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
-        self._exception_class = exception_class
+        self._exception_class = exception.__class__.__name__
+        self._exception = exception
 
     @property
     def id(self) -> Event.EventType:
@@ -147,7 +168,7 @@ class FailureEvent(Event):
 
     def __str__(self) -> str:
         preamble = (['Event: '], ['Failure-' + self._exception_class])
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)
 
 
 class SchedulerEvent(Event):
@@ -181,10 +202,12 @@ class HostEvent(Event):
     def __init__(self,
                  host_event_type: HostEventType,
                  compute: Compute,
-                 task: Task = None):
+                 task: Task = None,
+                 exception: Exception = None):
         self._host_event_type = host_event_type
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
+        self._exception = exception
 
     @property
     def id(self) -> Event.EventType:
@@ -192,7 +215,7 @@ class HostEvent(Event):
 
     def __str__(self) -> str:
         preamble = ([self.__class__.__name__ + ':'], [self._host_event_type.value])
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)
 
 
 class TaskEvent(Event):
@@ -202,10 +225,12 @@ class TaskEvent(Event):
     def __init__(self,
                  task_event_type: TaskEventType,
                  task: Task,
-                 compute: Compute = None):
+                 compute: Compute = None,
+                 exception: Exception = None):
         self._task_event_type = task_event_type
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
+        self._exception = exception
 
     @property
     def id(self) -> Event.EventType:
@@ -213,4 +238,4 @@ class TaskEvent(Event):
 
     def __str__(self) -> str:
         preamble = ([self.__class__.__name__ + ':'], [self._task_event_type.value])
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)

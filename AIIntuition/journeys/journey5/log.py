@@ -1,8 +1,11 @@
+import uuid
 from datetime import datetime
 from AIIntuition.journeys.journey5.event import Event, FailureEvent
 
 
 class Log:
+    _file_handle = None
+
     @classmethod
     def log_event(cls,
                   event: Event,
@@ -12,7 +15,9 @@ class Log:
         :param event: The event type
         :param argv: The components of the message body - all must support conversion to string
         """
-        print(cls.log_message(event, *argv))
+        log_msg = cls.log_message(event, *argv)
+        print(log_msg)
+        cls._log_to_file(log_msg)
 
     @classmethod
     def log_message(cls,
@@ -29,6 +34,17 @@ class Log:
         for arg in argv:
             log_message = ''.join((log_message, str(arg), ' '))
         return log_message
+
+    @classmethod
+    def _log_file_name(cls) -> str:
+        return datetime.now().strftime('%Y-%m-%d-%H-%M-%S-') + uuid.uuid4().hex + '.log'
+
+    @classmethod
+    def _log_to_file(cls, log_msg: str) -> None:
+        if cls._file_handle is None:
+            cls._file_handle = open(cls._log_file_name(), "w")
+        cls._file_handle.write(log_msg + '\n')
+        return
 
 
 if __name__ == "__main__":

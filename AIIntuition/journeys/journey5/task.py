@@ -155,6 +155,15 @@ class Task(ABC):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def cost(self) -> float:
+        """
+        The current cost incurred by the task
+        :return: The current task cost
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def resource_demand(self,
                         hour_of_day: int) -> List[int]:
@@ -188,11 +197,20 @@ class Task(ABC):
     @abstractmethod
     def execute(self,
                 compute_available: float,
-                compute_demand: float) -> None:
+                compute_demand: float) -> float:
         """
         Run a compute cycle of the application.
         :param compute_available: The memory allocated to
         :param compute_demand: The compute capacity available to the App
+        :return The actual amount of compute taken.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def book_cost(self, cost: float) -> None:
+        """
+        Record a run cost applied to the task
+        :param cost: The cost to be adcded to the current task total cost
         """
         raise NotImplementedError
 

@@ -36,6 +36,10 @@ class Host(Compute):
 
     @property
     def data_center(self) -> DataCenter.CountryCode:
+        """
+        The data center in which the host resides
+        :return: Data Center Country Code.
+        """
         return self._data_center.country_mnemonic
 
     @property
@@ -147,7 +151,9 @@ class Host(Compute):
             compute_available, cd = self._compute_availability(cd, ct)
             self._curr_comp += min(compute_available, cd)
 
-            task_to_run.execute(compute_available, cd)
+            compute_used = task_to_run.execute(compute_available, cd)
+            task_to_run.book_cost(self._data_center.compute_cost * self._core.core_cost * compute_used)
+
             Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
         return
 

@@ -28,6 +28,8 @@ class App(Task):
         self._core_load = task_profile.task_load
 
         # Properties that change during execution
+        self._cost = 0  # for the task lifetime , does not reset
+
         self._run_time_in_elapse_hours = None
         self._compute_deficit = None
         self._current_mem = None
@@ -131,10 +133,14 @@ class App(Task):
     @property
     def load_factor(self) -> int:
         """
-        The multiple of load placed by teh task on its associated compute resource
+        The multiple of load placed by the task on its associated compute resource
         :return: String name of the load profile (in set returned by load_types())
         """
         return deepcopy(self._core_load)
+
+    @property
+    def cost(self) -> float:
+        return deepcopy(self._cost)
 
     # ToDo: return immutable tuple not a list
     def resource_demand(self,
@@ -183,15 +189,24 @@ class App(Task):
 
     def execute(self,
                 compute_available: float,
-                compute_demand: float) -> None:
+                compute_demand: float) -> float:
         """
         Run a compute cycle of the application.
         :param compute_available: The memory allocated to
         :param compute_demand: The compute capacity available to the App
+        :return The actual amount of compute taken.
         """
         if not self.done:
             self._run_time_in_elapse_hours -= 1
             self._compute_deficit = max(0.0, (compute_demand - compute_available))
+        return compute_demand - self._compute_deficit
+
+    def book_cost(self, cost: float) -> None:
+        """
+        Record a run cost applied to the task
+        :param cost: The cost to be adcded to the current task total cost
+        """
+        self._cost += cost
         return
 
     def __memory_demand(self,

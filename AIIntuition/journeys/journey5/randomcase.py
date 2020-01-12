@@ -7,6 +7,7 @@ from AIIntuition.journeys.journey5.app import App
 from AIIntuition.journeys.journey5.infrnditer import InfRndIter
 from AIIntuition.journeys.journey5.policy import Policy
 from AIIntuition.journeys.journey5.randompolicy import RandomPolicy
+from AIIntuition.journeys.journey5.randomhostprofile import RandomHostProfile
 from AIIntuition.journeys.journey5.randomtaskprofile import RandomTaskProfile
 from AIIntuition.journeys.journey5.case import Case
 
@@ -17,8 +18,8 @@ class RandomCase(Case):
     created randomly and if applicable according to the defined probability distributions of the type
     """
     _num_hosts = 10
-    _num_apps = 20
-    _num_run_days = 15
+    _num_apps = 50
+    _num_run_days = 50
 
     @classmethod
     def set_up(cls) -> Tuple[int, int, Policy, Iterable, int]:
@@ -40,7 +41,8 @@ class RandomCase(Case):
 
         for i in range(0, cls._num_hosts):
             dc = DataCenter.next_data_center_by_p_dist()  # Pick a data centre according to DC distribution
-            _ = Host(dc)  # Create a Host in the chosen Data Centre
+            rhp = RandomHostProfile()
+            _ = Host(dc, rhp)  # Create a Host in the chosen Data Centre
 
         rtp = RandomTaskProfile()
         for i in range(0, cls._num_apps):
