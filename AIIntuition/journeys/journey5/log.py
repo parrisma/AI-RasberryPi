@@ -5,6 +5,20 @@ from AIIntuition.journeys.journey5.event import Event, FailureEvent
 
 class Log:
     _file_handle = None
+    _inst = None
+
+    def __init__(self):
+        if Log._inst is None:
+            Log._inst = 0
+        Log._inst += 1
+
+    def __del__(self):
+        Log._inst -= 1
+        if Log._inst <= 0:
+            Log._file_handle.flush()
+            Log._file_handle.close()
+            Log._file_handle = None
+            Log._inst = None
 
     @classmethod
     def log_event(cls,

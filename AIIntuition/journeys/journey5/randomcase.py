@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, Dict
 from collections.abc import Iterable
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.host import Host
@@ -9,6 +9,7 @@ from AIIntuition.journeys.journey5.policy import Policy
 from AIIntuition.journeys.journey5.randompolicy import RandomPolicy
 from AIIntuition.journeys.journey5.randomhostprofile import RandomHostProfile
 from AIIntuition.journeys.journey5.randomtaskprofile import RandomTaskProfile
+from AIIntuition.journeys.journey5.caseproperty import CaseProperty
 from AIIntuition.journeys.journey5.case import Case
 
 
@@ -17,6 +18,7 @@ class RandomCase(Case):
     This class sets up the data centres, Hosts & Apps for a full scale case, where all items are
     created randomly and if applicable according to the defined probability distributions of the type
     """
+
     _num_hosts = 10
     _num_apps = 50
     _num_run_days = 50
@@ -44,8 +46,8 @@ class RandomCase(Case):
             rhp = RandomHostProfile()
             _ = Host(dc, rhp)  # Create a Host in the chosen Data Centre
 
-        rtp = RandomTaskProfile()
         for i in range(0, cls._num_apps):
+            rtp = RandomTaskProfile()
             App(rtp)  # Create a new random app
 
         app_list = App.all_tasks()
@@ -56,3 +58,10 @@ class RandomCase(Case):
         compute_iter = InfRndIter(Host.all_hosts())
 
         return deepcopy(cls._num_hosts), deepcopy(cls._num_apps), policy, compute_iter, deepcopy(cls._num_run_days)
+
+    def properties(self) -> Dict[CaseProperty, object]:
+        return {
+            CaseProperty.NUM_TASK: self._num_apps,
+            CaseProperty.NUM_COMPUTE: self._num_hosts,
+            CaseProperty.NUM_RUN_DAYS: self._num_run_days
+        }
