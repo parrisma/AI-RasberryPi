@@ -1,3 +1,6 @@
 /archive/
 /venv/
 **/*.npy
+**/*.log
+**/*.pyc
+**/*.pyo
