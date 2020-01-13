@@ -5,7 +5,6 @@ from AIIntuition.journeys.journey5.eventlabels import EventLabels
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.util import Util
-from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.seqmap import SeqMap
 from AIIntuition.journeys.journey5.caseproperty import CaseProperty
 from AIIntuition.journeys.journey5.case import Case
@@ -26,11 +25,24 @@ class Event(ABC):
     _empty_props = ([], [])
 
     _seqm_dc = SeqMap(seq_name='Data Centers')
-    _seqm_comp = SeqMap(seq_name='Computes')
+    _seqm_comp = SeqMap(seq_name='Compute Id')
     _seqm_coret = SeqMap(seq_name='Core Types')
     _seqm_ncore = SeqMap(seq_name='Number of Cores')
     _seqm_memc = SeqMap(seq_name='Memory Size')
     _seqm_compm = SeqMap(seq_name='Max Compute')
+    _seqm_task = SeqMap(seq_name='Task Id')
+    _seqm_taskt = SeqMap(seq_name='Task Type')
+
+    def __del__(self):
+        # print(self._seqm_dc)
+        # print(self._seqm_comp)
+        # print(self._seqm_coret)
+        # print(self._seqm_ncore)
+        # print(self._seqm_memc)
+        # print(self._seqm_compm)
+        # print(self._seqm_task)
+        # print(self._seqm_taskt)
+        pass
 
     @property
     @abstractmethod
@@ -52,18 +64,18 @@ class Event(ABC):
     @classmethod
     def task_properties(cls,
                         task: Task,
-                        as_feature_vector: bool = False) -> Tuple[List, List]:
+                        as_feature: bool = False) -> Tuple[List, List]:
         """
         Extract all relevant properties from given task for event reporting
         :param task: the task object subject of the event
-        :param as_feature_vector: return the properties in feature vector form - One Hot, Normalised etc
+        :param as_feature: return the properties in feature vector form - One Hot, Normalised etc
         :return: List of task property labels, List of corresponding task property values as string
         """
-        labels = EventLabels.task_labels(as_feature_vector)
+        labels = EventLabels.task_labels(as_feature)
 
-        props = [str(task.id),
-                 str(task.task_type),
-                 str(task.core_type),
+        props = [cls._render(cls._seqm_task, str, task.id, as_feature),
+                 cls._render(cls._seqm_task, str, task.task_type, as_feature),
+                 cls._render(cls._seqm_coret, str, task.core_type, as_feature),
                  str(task.load_factor),
                  str(task.current_mem),
                  str(task.run_time),
