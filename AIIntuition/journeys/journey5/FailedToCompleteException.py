@@ -5,9 +5,10 @@ from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.errorcode import ErrorCode
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import FailureEvent
+from AIIntuition.journeys.journey5.jexception import JException
 
 
-class FailedToCompleteException(Exception):
+class FailedToCompleteException(JException):
     """
     Raised when an application has a compute deficit when it runs out of compute cycles.
     """
@@ -25,9 +26,15 @@ class FailedToCompleteException(Exception):
         self._compute = compute
         self._error_code = ErrorCode.FAILED_TO_COMPLETE
 
-    def __str__(self) -> str:
-        log_msg = Log.log_message(FailureEvent(self.__class__.__name__, self._task, self._compute))
-        return log_msg
+    def as_string(self,
+                  as_feature: bool = False) -> str:
+        """
+        The exception rendered as string, if as_feature = True then as a feature vector equivalent for use in AL/ML
+        context.
+        :return: Exception as string
+        """
+        s = Log.log_message(FailureEvent(self.__class__.__name__, self._task, self._compute), as_feature)
+        return s
 
     @property
     def task(self) -> Task:

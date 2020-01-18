@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import List, Tuple, Callable
-import inspect
 from AIIntuition.journeys.journey5.eventlabels import EventLabels
 from AIIntuition.journeys.journey5.compute import Compute
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.util import Util
 from AIIntuition.journeys.journey5.seqmap import SeqMap
+from AIIntuition.journeys.journey5.jexception import JException
 from enum import Enum, unique
 
 
@@ -21,6 +21,7 @@ class Event(ABC):
         def __str__(self):
             return self.value
 
+    _sep = ','
     _empty_props = ([], [])
 
     _seqm_event_type = SeqMap(seq_name='Event Type')
@@ -52,6 +53,14 @@ class Event(ABC):
             c.dump_features()
         return
 
+    @classmethod
+    def separator(cls) -> str:
+        """
+        The character to use as field separartor
+        :return: str
+        """
+        return cls._sep
+
     @property
     @abstractmethod
     def id(self) -> int:
@@ -61,13 +70,13 @@ class Event(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def __str__(self) -> str:
-        """
-        The event rendered as a string
-        :return: Event as string
-        """
-        raise NotImplementedError
+    # @abstractmethod
+    # def __str__(self) -> str:
+    #    """
+    #    The event rendered as a string
+    #    :return: Event as string
+    #    """
+    #    raise NotImplementedError
 
     @abstractmethod
     def as_str(self,
@@ -99,13 +108,14 @@ class Event(ABC):
         """
         labels = EventLabels.task_labels(as_feature)
         comp = Compute.compute_linked_to_task(task)
-        comp_max_mem = task.current_mem
         if comp is not None:
             comp_max_mem = comp.max_memory
+        else:
+            comp_max_mem = max(float(1), task.current_mem)
 
-        props = [cls._render(cls._seqm_task, str, task.id, as_feature),
-                 cls._render(cls._seqm_taskt, str, task.task_type, as_feature),
-                 cls._render(cls._seqm_coret, str, task.core_type, as_feature),
+        props = [cls._render(str, cls._seqm_task, task.id, as_feature),
+                 cls._render(str, cls._seqm_taskt, task.task_type, as_feature),
+                 cls._render(str, cls._seqm_coret, task.core_type, as_feature),
                  cls._render(str, str, task.load_factor, as_feature),
                  cls._render(str, str, Util.to_pct(task.current_mem, comp_max_mem), as_feature),
                  cls._render(str, str, task.run_time, as_feature),
@@ -127,13 +137,13 @@ class Event(ABC):
         """
         labels = EventLabels.host_labels(as_feature)
 
-        props = [cls._render(cls._seqm_dc, str, compute.data_center, as_feature),
-                 cls._render(cls._seqm_comp, str, compute.id, as_feature),
-                 cls._render(cls._seqm_coret, str, compute.type, as_feature),
-                 cls._render(cls._seqm_ncore, str, compute.core_count, as_feature),
-                 cls._render(cls._seqm_memc, str, compute.max_memory, as_feature),
+        props = [cls._render(str, cls._seqm_dc, compute.data_center, as_feature),
+                 cls._render(str, cls._seqm_comp, compute.id, as_feature),
+                 cls._render(str, cls._seqm_coret, compute.type, as_feature),
+                 cls._render(str, cls._seqm_ncore, compute.core_count, as_feature),
+                 cls._render(str, cls._seqm_memc, compute.max_memory, as_feature),
                  cls._render(str, str, Util.to_pct(compute.current_memory, compute.max_memory), as_feature),
-                 cls._render(cls._seqm_compm, str, compute.max_compute, as_feature),
+                 cls._render(str, cls._seqm_compm, compute.max_compute, as_feature),
                  cls._render(str, str, Util.to_pct(compute.current_compute, compute.max_compute), as_feature),
                  cls._render(str, str, compute.num_associated_task, as_feature)]
 
@@ -141,7 +151,7 @@ class Event(ABC):
 
     @classmethod
     def exception_properties(cls,
-                             exception: Exception,
+                             exception: JException,
                              as_feature: bool = False) -> Tuple[List, List]:
         """
         Extract all relevant properties from given exception for event reporting
@@ -150,7 +160,7 @@ class Event(ABC):
         :return: List of compute property labels, List of corresponding exception property values as string
         """
         labels = EventLabels.exception_labels(as_feature)
-        props = [str(exception)]
+        props = [exception.__class__.__name__]
 
         return labels, props
 
@@ -175,11 +185,13 @@ class Event(ABC):
 
     @classmethod
     def zip_and_separate(cls,
+                         as_feature: bool,
                          *argv,
-                         separator: str = ', '):
+                         separator: str = _sep + ' '):
         """
         Take an arbitrary set of paris of lists of the form List[Labels], List[Corresponding Values] and zip
         them into a single
+        :param as_feature: Render only the values as we are creating a feature vector.
         :param argv: List[List[keys 1], List[Values 1],List[keys 2], List[Values 2], ...]
         :param separator: separator to add after each key value pair in the final list
         :return: List[ key1.1, value1.1, Sep, key1.2, value1.2, Sep, .. Key1.n, value1.n, Sep, Key2.1, Value2.1, Sep ..]
@@ -188,7 +200,10 @@ class Event(ABC):
         for tupl in argv:
             ky, vl = tupl
             s = [separator] * len(ky)
-            f = f + [e for l in list(zip(ky, vl, s)) for e in l]  # Flatten out the tuples
+            if as_feature:
+                f = f + [e for l in list(zip(vl, s)) for e in l]  # Flatten out the tuples
+            else:
+                f = f + [e for l in list(zip(ky, vl, s)) for e in l]  # Flatten out the tuples
         return f
 
     @classmethod
@@ -196,7 +211,7 @@ class Event(ABC):
                              preamble: Tuple[List[str], List[str]],
                              task: Task = None,
                              comp: Compute = None,
-                             exception: Exception = None,
+                             exception: JException = None,
                              as_feature: bool = None):
         task_props = cls._empty_props
         if task is not None:
@@ -208,7 +223,7 @@ class Event(ABC):
         if exception is not None:
             exception_props = Event.exception_properties(exception, as_feature)
 
-        as_str = ''.join(Event.zip_and_separate(preamble, task_props, comp_props, exception_props))
+        as_str = ''.join(Event.zip_and_separate(as_feature, preamble, task_props, comp_props, exception_props))
         return as_str
 
     @classmethod
@@ -235,10 +250,13 @@ class Event(ABC):
         :param as_feature: If true render as feature else as regular string
         :return: List of string event class, event sub type
         """
-        if as_feature:
-            preamble = ([event.__class__.__name__ + ':'], [event_sub_type])
+        if not as_feature:
+            preamble = ([event.__class__.__name__ + ': '], [event_sub_type])
         else:
-            preamble = ([cls._seqm_event_type(event.__class__.__name__)], [seq_map(event_sub_type)])
+            preamble = (
+                ['Event Type', 'Event Sub Type'],
+                [cls._seqm_event_type(event.__class__.__name__), seq_map(event_sub_type)]
+            )
         return preamble
 
 
@@ -246,20 +264,17 @@ class FailureEvent(Event):
     _seqm_fail_event_type = SeqMap(seq_name='Failure Event Type')
 
     def __init__(self,
-                 exception: Exception,
+                 exception: JException,
                  task: Task = None,
                  compute: Compute = None):
-        self._task = deepcopy(task)
-        self._compute = deepcopy(compute)
+        self._task = task
+        self._compute = compute
         self._exception_class = exception.__class__.__name__
         self._exception = exception
 
     @property
     def id(self) -> Event.EventType:
         return Event.EventType.FAIL
-
-    def __str__(self) -> str:
-        return self.as_str(as_feature=False)
 
     def as_str(self,
                as_feature: bool = False) -> str:
@@ -269,7 +284,7 @@ class FailureEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._exception_class, self._seqm_fail_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -283,6 +298,7 @@ class FailureEvent(Event):
 class SchedulerEvent(Event):
     _seqm_schedule_event_type = SeqMap(seq_name='Schedule Event Type')
 
+    @unique
     class SchedulerEventType(Enum):
         START = 'Start'
         COMPLETE = 'Complete'
@@ -296,9 +312,6 @@ class SchedulerEvent(Event):
     def id(self) -> Event.EventType:
         return Event.EventType.HOST
 
-    def __str__(self) -> str:
-        return self.as_str(as_feature=False)
-
     def as_str(self,
                as_feature: bool = False) -> str:
         """
@@ -307,7 +320,7 @@ class SchedulerEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._scheduler_event_type.value, self._seqm_schedule_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble)
+        return Event.task_and_comp_to_str(preamble, as_feature=as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -321,6 +334,7 @@ class SchedulerEvent(Event):
 class HostEvent(Event):
     _seqm_host_event_type = SeqMap(seq_name='Host Event Type')
 
+    @unique
     class HostEventType(Enum):
         INSTANTIATE = 'Instantiate'
         DONE = 'Done'
@@ -343,9 +357,6 @@ class HostEvent(Event):
     def id(self) -> Event.EventType:
         return Event.EventType.HOST
 
-    def __str__(self) -> str:
-        return self.as_str(as_feature=False)
-
     def as_str(self,
                as_feature: bool = False) -> str:
         """
@@ -354,7 +365,7 @@ class HostEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._host_event_type.value, self._seqm_host_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -367,6 +378,7 @@ class HostEvent(Event):
 class TaskEvent(Event):
     _seqm_task_event_type = SeqMap(seq_name='Task Event Type')
 
+    @unique
     class TaskEventType(Enum):
         STATUS = 'Status'
 
@@ -384,9 +396,6 @@ class TaskEvent(Event):
     def id(self) -> Event.EventType:
         return Event.EventType.TASK
 
-    def __str__(self) -> str:
-        return self.as_str(as_feature=False)
-
     def as_str(self,
                as_feature: bool = False) -> str:
         """
@@ -395,8 +404,8 @@ class TaskEvent(Event):
         for use in AL/ML context.
         :return: Event as string
         """
-        preamble = Event.preamble(self, self._task_event_type.value, self._seqm_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception)
+        preamble = Event.preamble(self, self._task_event_type.value, self._seqm_task_event_type, as_feature)
+        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
