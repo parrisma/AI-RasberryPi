@@ -229,7 +229,7 @@ class Host(Compute):
                 host_list.append(comp)
         return host_list
 
-    def all_tasks(self) -> List:
+    def all_tasks(self) -> List['Task']:
         """
         Create a deepcopy list of all tasks associated with the host at this point in time
         :return: A list of tasks

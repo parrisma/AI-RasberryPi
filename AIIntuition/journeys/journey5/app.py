@@ -140,6 +140,10 @@ class App(Task):
 
     @property
     def cost(self) -> float:
+        """
+        The life to date cost of executing the task, this includes the cost of all failed attempts
+        :return: The life to date cost of running the task.
+        """
         return deepcopy(self._cost)
 
     # ToDo: return immutable tuple not a list

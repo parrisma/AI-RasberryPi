@@ -25,21 +25,24 @@ class Log:
                   event: Event,
                   *argv) -> None:
         """
-        Post a standard form log message to the current sink of the Log Class/
+        Post a standard form log message to the current sink of the Log Class
         :param event: The event type
         :param argv: The components of the message body - all must support conversion to string
         """
-        log_msg = cls.log_message(event, *argv)
+        log_msg = cls.log_message(event, False, *argv)
         print(log_msg)
         cls._log_to_file(log_msg)
+        cls._log_to_feature_file(cls.log_message(event, True, *argv))
 
     @classmethod
     def log_message(cls,
                     event: Event,
+                    as_features: bool,
                     *argv) -> str:
         """
         Return a standard form log message
         :param event: The event type
+        :param as_features: Create the log entry 'feature style' for use by AI/ML routines
         :param argv: The components of the message body - all must support conversion to string
         :return: Standard form Log message - current time stamp, event type & message body
         """
@@ -57,6 +60,17 @@ class Log:
     def _log_to_file(cls, log_msg: str) -> None:
         if cls._file_handle is None:
             cls._file_handle = open(cls._log_file_name(), "w")
+        cls._file_handle.write(log_msg + '\n')
+        return
+
+    @classmethod
+    def _feature_file_name(cls) -> str:
+        return datetime.now().strftime('%Y-%m-%d-%H-%M-%S-') + uuid.uuid4().hex + '_features.log'
+
+    @classmethod
+    def _log_to_feature_file(cls, log_msg: str) -> None:
+        if cls._file_handle is None:
+            cls._file_handle = open(cls._feature_file_name(), "w")
         cls._file_handle.write(log_msg + '\n')
         return
 

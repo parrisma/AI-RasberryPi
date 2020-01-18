@@ -125,6 +125,14 @@ class Compute(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def all_tasks(self) -> List[Task]:
+        """
+        Create a deepcopy list of all tasks associated with the host at this point in time
+        :return: A list of tasks
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def run_next_task(self,
                       hour_of_day: int) -> None:
         """
@@ -175,3 +183,16 @@ class Compute(ABC):
         if compute_id not in cls.__all_computes:
             raise ValueError('Compute id:' + compute_id + ' does not exist')
         return cls.__all_computes[compute_id]
+
+    @classmethod
+    def compute_linked_to_task(cls,
+                               task: Task) -> 'Compute':
+        """
+        Return the Compute that is currently associated with the given task
+        :return: The Compute running the task or None of the task is not linked to a compute.
+        """
+        for c in cls.__all_computes.keys():
+            for t in cls.__all_computes[c].all_tasks():
+                if t.id == task.id:
+                    return cls.__all_computes[c]
+        return None
