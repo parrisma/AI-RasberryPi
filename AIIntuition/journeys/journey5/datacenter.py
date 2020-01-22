@@ -2,6 +2,7 @@ from copy import deepcopy
 from enum import Enum, unique
 import numpy as np
 from typing import List
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class DataCenter:
@@ -97,20 +98,23 @@ class DataCenter:
                 dc_by_dist = cls.__all_data_centers[cc]
         return dc_by_dist
 
-    def local_hour_of_day(self,
-                          gmt_hour_of_day: int) -> int:
+    def local_system_time(self,
+                          sys_time: SystemTime) -> SystemTime:
         """
         The local hour of the day for the timezone of the data center
-        :param gmt_hour_of_day: The hour of day at GMT
-        :return: The local hour of the day 0 - 23
+        :param sys_time: The global system time to reference local time from.
+        :return: The local system time for the timezone of the data center.
         """
-        os = self.__hour_of_day_offset[self.region]
-        hod = gmt_hour_of_day + os
-        if hod < 0:
-            hod += 23
-        if hod > 23:
-            hod -= 23
-        return hod
+        offset = self.__hour_of_day_offset[self.region]
+        hour_of_local_day = sys_time.hour_of_day + offset
+        day_offset = 0
+        if hour_of_local_day < 0:
+            hour_of_local_day += 23
+            day_offset = 1
+        if hour_of_local_day > 23:
+            hour_of_local_day -= 23
+            day_offset = -1
+        return SystemTime(sys_time.day_of_year + day_offset, hour_of_local_day)
 
     @classmethod
     def country_codes(cls) -> List['DataCenter.CountryCode']:

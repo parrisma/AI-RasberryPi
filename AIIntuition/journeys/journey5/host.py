@@ -12,6 +12,7 @@ from AIIntuition.journeys.journey5.event import HostEvent
 from AIIntuition.journeys.journey5.util import Util
 from AIIntuition.journeys.journey5.cputype import CPUType
 from AIIntuition.journeys.journey5.computeprofile import ComputeProfile
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class Host(Compute):
@@ -31,7 +32,7 @@ class Host(Compute):
         self._inf_task_iter = None  # The infinite iterate to use when running associated tasks.
         self._curr_mem = 0
         self._curr_comp = 0
-        Log.log_event(HostEvent(HostEvent.HostEventType.INSTANTIATE, self), '')
+        Log.log_event(HostEvent(SystemTime(0, 0), HostEvent.HostEventType.INSTANTIATE, self), '')
         return
 
     @property
@@ -41,6 +42,14 @@ class Host(Compute):
         :return: Data Center Country Code.
         """
         return self._data_center.country_mnemonic
+
+    def local_time(self,
+                   global_sys_time: SystemTime) -> SystemTime:
+        """
+        The local system time with respect to the global time given.
+        :return: Local system time
+        """
+        return self._data_center.local_system_time(global_sys_time)
 
     @property
     def name(self) -> str:
@@ -125,11 +134,11 @@ class Host(Compute):
         return len(self._tasks)
 
     def run_next_task(self,
-                      gmt_hour_of_day: int) -> None:
+                      sys_time: SystemTime) -> None:
         """
         Randomly pick a task from the list of associated and run it - eventually all tasks will be run. It is possible
         that tasks will not all be run an equal number of times.
-        :param gmt_hour_of_day: The gmt hour of day at which the task is being executed
+        :param sys_time: The system time according to the scheduler.
         """
         if len(self._tasks) == 0:
             print("No tasks to run on Host:" + self.id)
@@ -139,8 +148,8 @@ class Host(Compute):
         task_to_run = self.__next_task_to_execute()
 
         # Get current & required demand - return current resources
-        local_hour_of_day = self._data_center.local_hour_of_day(gmt_hour_of_day)
-        cd, cc, ct, md, cm = task_to_run.resource_demand(local_hour_of_day)
+        local_sys_time = self._data_center.local_system_time(sys_time.hour_of_day)
+        cd, cc, ct, md, cm = task_to_run.resource_demand(local_sys_time.hour_of_day)
         self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
         self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
 
@@ -154,7 +163,11 @@ class Host(Compute):
             compute_used = task_to_run.execute(compute_available, cd)
             task_to_run.book_cost(self._data_center.compute_cost * self._core.core_cost * compute_used)
 
-            Log.log_event(HostEvent(HostEvent.HostEventType.EXECUTE, self, task_to_run), '')
+            Log.log_event(HostEvent(sys_time,
+                                    HostEvent.HostEventType.EXECUTE,
+                                    compute=self,
+                                    task=task_to_run),
+                          '')
         return
 
     def _check_memory_not_exhausted(self,

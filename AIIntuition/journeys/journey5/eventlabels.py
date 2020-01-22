@@ -14,6 +14,7 @@ class EventLabels:
                       '',
                       '',
                       '',
+                      '',
                       '']
         else:
             labels = ['Task: ',
@@ -24,7 +25,8 @@ class EventLabels:
                       'Run Time: ',
                       'Deficit: ',
                       'Cost: ',
-                      'Time Left: ']
+                      'Time Left: ',
+                      'Done: ']
         return labels
 
     @classmethod
@@ -32,6 +34,7 @@ class EventLabels:
                     as_feature_labels: bool = False) -> List[str]:
         if as_feature_labels:
             labels = ['',
+                      '',
                       '',
                       '',
                       '',
@@ -49,7 +52,8 @@ class EventLabels:
                       'Mem Util %: ',
                       'Comp: ',
                       'Comp Util %: ',
-                      'Num Tasks: ']
+                      'Num Tasks: ',
+                      'Local Hour: ']
         return labels
 
     @classmethod

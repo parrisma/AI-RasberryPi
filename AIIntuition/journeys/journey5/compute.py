@@ -3,6 +3,7 @@ from typing import List
 from copy import deepcopy
 from random import randint
 from AIIntuition.journeys.journey5.task import Task
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 """
 Abstract Base Class for anything that can supply compute capability.  
@@ -21,6 +22,15 @@ class Compute(ABC):
         """
         The Mnemonic of the Data Center where the compute resource is located
         :return: Data Center Mnemonic
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def local_time(self,
+                   global_sys_time: SystemTime) -> SystemTime:
+        """
+        The local system time with respect to the global time given.
+        :return: Local system time
         """
         raise NotImplementedError
 
@@ -134,11 +144,11 @@ class Compute(ABC):
 
     @abstractmethod
     def run_next_task(self,
-                      hour_of_day: int) -> None:
+                      sys_time: SystemTime) -> None:
         """
         Randomly pick a load from the list of associated and run it - eventually all loads will be run. It is possible
         that loads will not all be run an equal number of times.
-        :param hour_of_day: The current (local time) hour of the day
+        :param sys_time: The current system time of the scheduler (global time)
         """
         raise NotImplementedError
 

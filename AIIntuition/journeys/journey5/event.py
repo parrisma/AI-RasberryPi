@@ -7,6 +7,7 @@ from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.util import Util
 from AIIntuition.journeys.journey5.seqmap import SeqMap
 from AIIntuition.journeys.journey5.jexception import JException
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 from enum import Enum, unique
 
 
@@ -33,6 +34,7 @@ class Event(ABC):
     _seqm_compm = SeqMap(seq_name='Max Compute')
     _seqm_task = SeqMap(seq_name='Task Id')
     _seqm_taskt = SeqMap(seq_name='Task Type')
+    _seqm_taskd = SeqMap(seq_name='Task Done')
 
     @classmethod
     def dump_feature_maps(cls):
@@ -40,15 +42,10 @@ class Event(ABC):
         Print to stdout the current state of all of the feature maps.
         :return:
         """
-        print(cls._seqm_event_type)
-        print(cls._seqm_dc)
-        print(cls._seqm_comp)
-        print(cls._seqm_coret)
-        print(cls._seqm_ncore)
-        print(cls._seqm_memc)
-        print(cls._seqm_compm)
-        print(cls._seqm_task)
-        print(cls._seqm_taskt)
+        for vk in cls.__dict__.keys():
+            v = cls.__dict__[vk]
+            if isinstance(v, SeqMap):
+                print(str(v))
         for c in cls.__subclasses__():
             c.dump_features()
         return
@@ -56,7 +53,7 @@ class Event(ABC):
     @classmethod
     def separator(cls) -> str:
         """
-        The character to use as field separartor
+        The character to use as field separator
         :return: str
         """
         return cls._sep
@@ -121,16 +118,19 @@ class Event(ABC):
                  cls._render(str, str, task.run_time, as_feature),
                  cls._render(cls._flt, cls._flt, task.compute_deficit, as_feature),
                  cls._render(cls._flt, cls._flt, task.cost, as_feature),
-                 cls._render(str, str, task.curr_run_time, as_feature)]
+                 cls._render(str, str, task.curr_run_time, as_feature),
+                 cls._render(str, cls._seqm_taskd, task.done, as_feature)]
 
         return labels, props
 
     @classmethod
     def compute_properties(cls,
+                           sys_time: SystemTime,
                            compute: Compute,
                            as_feature: bool = False) -> Tuple[List, List]:
         """
         Extract all relevant properties from given compute for event reporting
+        :param sys_time: The global system time
         :param compute: the compute object subject of the event
         :param as_feature: return the properties in feature vector form - One Hot, Normalised etc
         :return: List of compute property labels, List of corresponding compute property values as string
@@ -145,7 +145,8 @@ class Event(ABC):
                  cls._render(str, str, Util.to_pct(compute.current_memory, compute.max_memory), as_feature),
                  cls._render(str, cls._seqm_compm, compute.max_compute, as_feature),
                  cls._render(str, str, Util.to_pct(compute.current_compute, compute.max_compute), as_feature),
-                 cls._render(str, str, compute.num_associated_task, as_feature)]
+                 cls._render(str, str, compute.num_associated_task, as_feature),
+                 cls._render(str, str, compute.local_time(global_sys_time=sys_time), as_feature)]
 
         return labels, props
 
@@ -208,6 +209,7 @@ class Event(ABC):
 
     @classmethod
     def task_and_comp_to_str(cls,
+                             sys_time: SystemTime,
                              preamble: Tuple[List[str], List[str]],
                              task: Task = None,
                              comp: Compute = None,
@@ -218,7 +220,7 @@ class Event(ABC):
             task_props = Event.task_properties(task, as_feature)
         comp_props = cls._empty_props
         if comp is not None:
-            comp_props = Event.compute_properties(comp, as_feature)
+            comp_props = Event.compute_properties(sys_time, comp, as_feature)
         exception_props = cls._empty_props
         if exception is not None:
             exception_props = Event.exception_properties(exception, as_feature)
@@ -260,10 +262,18 @@ class Event(ABC):
         return preamble
 
 
+"""
+*** 
+*** Concrete Event Types.
+***
+"""
+
+
 class FailureEvent(Event):
     _seqm_fail_event_type = SeqMap(seq_name='Failure Event Type')
 
     def __init__(self,
+                 sys_time: SystemTime,
                  exception: JException,
                  task: Task = None,
                  compute: Compute = None):
@@ -271,6 +281,7 @@ class FailureEvent(Event):
         self._compute = compute
         self._exception_class = exception.__class__.__name__
         self._exception = exception
+        self._sys_time = sys_time
 
     @property
     def id(self) -> Event.EventType:
@@ -284,7 +295,8 @@ class FailureEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._exception_class, self._seqm_fail_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
+        return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
+                                          as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -305,8 +317,10 @@ class SchedulerEvent(Event):
         NEW_DAY = 'New Day'
 
     def __init__(self,
+                 sys_time: SystemTime,
                  host_event_type: SchedulerEventType):
         self._scheduler_event_type = host_event_type
+        self._sys_time = sys_time
 
     @property
     def id(self) -> Event.EventType:
@@ -344,6 +358,7 @@ class HostEvent(Event):
         STATUS = 'Status'
 
     def __init__(self,
+                 sys_time: SystemTime,
                  host_event_type: HostEventType,
                  compute: Compute,
                  task: Task = None,
@@ -352,6 +367,7 @@ class HostEvent(Event):
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
         self._exception = exception
+        self._sys_time = sys_time
 
     @property
     def id(self) -> Event.EventType:
@@ -365,7 +381,8 @@ class HostEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._host_event_type.value, self._seqm_host_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
+        return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
+                                          as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -383,6 +400,7 @@ class TaskEvent(Event):
         STATUS = 'Status'
 
     def __init__(self,
+                 sys_time: SystemTime,
                  task_event_type: TaskEventType,
                  task: Task,
                  compute: Compute = None,
@@ -391,6 +409,7 @@ class TaskEvent(Event):
         self._task = deepcopy(task)
         self._compute = deepcopy(compute)
         self._exception = exception
+        self._sys_time = sys_time
 
     @property
     def id(self) -> Event.EventType:
@@ -405,7 +424,8 @@ class TaskEvent(Event):
         :return: Event as string
         """
         preamble = Event.preamble(self, self._task_event_type.value, self._seqm_task_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, self._task, self._compute, self._exception, as_feature)
+        return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
+                                          as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
