@@ -117,19 +117,23 @@ class Compute(ABC):
 
     @abstractmethod
     def associate_task(self,
+                       sys_time: SystemTime,
                        load: Task) -> None:
         """
         Associate the given load with this host such that the host will execute the load during it's run cycle.
+        :param sys_time: The current system time
         :param load: The Load to associate with the Host
         """
         raise NotImplementedError
 
     @abstractmethod
     def disassociate_task(self,
+                          sys_time: SystemTime,
                           load: Task) -> None:
         """
         Dis-Associate the given load with this host such that the host will NOT execute the load during it's run
         cycle.
+        :param sys_time: The current system time
         :param load: The Load to associate with the Host
         """
         raise NotImplementedError

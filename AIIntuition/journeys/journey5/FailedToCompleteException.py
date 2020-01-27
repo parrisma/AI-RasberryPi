@@ -6,6 +6,7 @@ from AIIntuition.journeys.journey5.errorcode import ErrorCode
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import FailureEvent
 from AIIntuition.journeys.journey5.jexception import JException
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class FailedToCompleteException(JException):
@@ -21,19 +22,20 @@ class FailedToCompleteException(JException):
         :param task: The task that required more compute than was available & thus failed
         :param compute: The Compute that was unable to supply the required compute
         """
-        self._event_time = time = datetime.now().strftime("%H:%M:%S")
+        self._event_time = datetime.now().strftime("%H:%M:%S")
         self._task = task
         self._compute = compute
         self._error_code = ErrorCode.FAILED_TO_COMPLETE
 
     def as_string(self,
+                  sys_time: SystemTime,
                   as_feature: bool = False) -> str:
         """
         The exception rendered as string, if as_feature = True then as a feature vector equivalent for use in AL/ML
         context.
         :return: Exception as string
         """
-        s = Log.log_message(FailureEvent(self.__class__.__name__, self._task, self._compute), as_feature)
+        s = Log.log_message(sys_time, FailureEvent(sys_time, self, self._task, self._compute), as_feature)
         return s
 
     @property

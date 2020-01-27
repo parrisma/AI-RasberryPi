@@ -8,6 +8,7 @@ from AIIntuition.journeys.journey5.util import Util
 from AIIntuition.journeys.journey5.seqmap import SeqMap
 from AIIntuition.journeys.journey5.jexception import JException
 from AIIntuition.journeys.journey5.systemtime import SystemTime
+from AIIntuition.journeys.journey5.globsym import GlobSym
 from enum import Enum, unique
 
 
@@ -22,7 +23,7 @@ class Event(ABC):
         def __str__(self):
             return self.value
 
-    _sep = ','
+    _sep = GlobSym.separator()
     _empty_props = ([], [])
 
     _seqm_event_type = SeqMap(seq_name='Event Type')
@@ -67,20 +68,13 @@ class Event(ABC):
         """
         raise NotImplementedError
 
-    # @abstractmethod
-    # def __str__(self) -> str:
-    #    """
-    #    The event rendered as a string
-    #    :return: Event as string
-    #    """
-    #    raise NotImplementedError
-
     @abstractmethod
     def as_str(self,
                as_feature: bool = False) -> str:
         """
         The event rendered as either a regular string or as a string a features that are more applicable
         for use in AL/ML context.
+        :param as_feature: If true render in feature vector format
         :return: Event as string
         """
         raise NotImplementedError
@@ -136,6 +130,7 @@ class Event(ABC):
         :return: List of compute property labels, List of corresponding compute property values as string
         """
         labels = EventLabels.host_labels(as_feature)
+        lt = compute.local_time(global_sys_time=sys_time)
 
         props = [cls._render(str, cls._seqm_dc, compute.data_center, as_feature),
                  cls._render(str, cls._seqm_comp, compute.id, as_feature),
@@ -146,7 +141,8 @@ class Event(ABC):
                  cls._render(str, cls._seqm_compm, compute.max_compute, as_feature),
                  cls._render(str, str, Util.to_pct(compute.current_compute, compute.max_compute), as_feature),
                  cls._render(str, str, compute.num_associated_task, as_feature),
-                 cls._render(str, str, compute.local_time(global_sys_time=sys_time), as_feature)]
+                 cls._render(str, str, lt.day_of_year, as_feature),
+                 cls._render(str, str, lt.hour_of_day, as_feature)]
 
         return labels, props
 
@@ -292,6 +288,7 @@ class FailureEvent(Event):
         """
         The event rendered as either a regular string or as a string a features that are more applicable
         for use in AL/ML context.
+        :param as_feature: If true render in feature vector format
         :return: Event as string
         """
         preamble = Event.preamble(self, self._exception_class, self._seqm_fail_event_type, as_feature)
@@ -318,8 +315,8 @@ class SchedulerEvent(Event):
 
     def __init__(self,
                  sys_time: SystemTime,
-                 host_event_type: SchedulerEventType):
-        self._scheduler_event_type = host_event_type
+                 scheduler_event_type: SchedulerEventType):
+        self._scheduler_event_type = scheduler_event_type
         self._sys_time = sys_time
 
     @property
@@ -329,12 +326,14 @@ class SchedulerEvent(Event):
     def as_str(self,
                as_feature: bool = False) -> str:
         """
-        The event rendered as either a regular string or as a string a features that are more applicable
-        for use in AL/ML context.
-        :return: Event as string
-        """
-        preamble = Event.preamble(self, self._scheduler_event_type.value, self._seqm_schedule_event_type, as_feature)
-        return Event.task_and_comp_to_str(preamble, as_feature=as_feature)
+         The event rendered as either a regular string or as a string a features that are more applicable
+         for use in AL/ML context.
+         :param as_feature: If true render in feature vector format
+         :return: Event as string
+         """
+        preamble = Event.preamble(self, str(self._scheduler_event_type.value), self._seqm_schedule_event_type,
+                                  as_feature)
+        return Event.task_and_comp_to_str(self._sys_time, preamble, as_feature=as_feature)
 
     @classmethod
     def dump_features(cls) -> None:
@@ -356,6 +355,9 @@ class HostEvent(Event):
         ASSOCIATE = 'Associate'
         DISASSOCIATE = 'Disassociate'
         STATUS = 'Status'
+
+        def __str(self) -> str:
+            return self.value
 
     def __init__(self,
                  sys_time: SystemTime,
@@ -380,7 +382,7 @@ class HostEvent(Event):
         for use in AL/ML context.
         :return: Event as string
         """
-        preamble = Event.preamble(self, self._host_event_type.value, self._seqm_host_event_type, as_feature)
+        preamble = Event.preamble(self, str(self._host_event_type), self._seqm_host_event_type, as_feature)
         return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
                                           as_feature)
 
@@ -423,7 +425,7 @@ class TaskEvent(Event):
         for use in AL/ML context.
         :return: Event as string
         """
-        preamble = Event.preamble(self, self._task_event_type.value, self._seqm_task_event_type, as_feature)
+        preamble = Event.preamble(self, str(self._task_event_type), self._seqm_task_event_type, as_feature)
         return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
                                           as_feature)
 

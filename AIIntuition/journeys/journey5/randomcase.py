@@ -11,6 +11,7 @@ from AIIntuition.journeys.journey5.randomhostprofile import RandomHostProfile
 from AIIntuition.journeys.journey5.randomtaskprofile import RandomTaskProfile
 from AIIntuition.journeys.journey5.caseproperty import CaseProperty
 from AIIntuition.journeys.journey5.case import Case
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class RandomCase(Case):
@@ -53,7 +54,7 @@ class RandomCase(Case):
         app_list = App.all_tasks()
         for app in app_list:
             hst = policy.select_optimal_compute(app)
-            hst.associate_task(app)
+            hst.associate_task(SystemTime(0, 0), app)
 
         compute_iter = InfRndIter(Host.all_hosts())
 

@@ -1,5 +1,7 @@
-from typing import Tuple
+from typing import Tuple, Dict
 from collections.abc import Iterable
+
+from AIIntuition.journeys.journey5.caseproperty import CaseProperty
 from AIIntuition.journeys.journey5.datacenter import DataCenter
 from AIIntuition.journeys.journey5.host import Host
 from AIIntuition.journeys.journey5.app import App
@@ -13,6 +15,7 @@ from AIIntuition.journeys.journey5.cputype import CPUType
 from AIIntuition.journeys.journey5.task import Task
 from AIIntuition.journeys.journey5.core import Core
 from AIIntuition.journeys.journey5.case import Case
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class Cases:
@@ -34,10 +37,10 @@ class Cases:
             dc = DataCenter(DataCenter.CountryCode.ICELAND)  # Create a single DC Only.
 
             fhp1 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=2)), mem=16)
-            h1 = Host(dc, fhp1)  # Create first low spec host
+            h1 = Host(SystemTime(0, 0), dc, fhp1)  # Create first low spec host
 
             fhp2 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=16)), mem=256)
-            h2 = Host(dc, fhp2)  # Create another high spec host
+            h2 = Host(SystemTime(0, 0), dc, fhp2)  # Create another high spec host
 
             policy = SequentialPolicy(h1, h2)
 
@@ -49,7 +52,7 @@ class Cases:
                                    run_time=30)
 
             app1 = App(ftp)  # Create a new app in line with task policy
-            policy.select_optimal_compute(app1).associate_task(app1)
+            policy.select_optimal_compute(app1).associate_task(SystemTime(0, 0), app1)
 
             compute_iter = InfRndIter(Host.all_hosts())
 
@@ -69,10 +72,10 @@ class Cases:
             dc = DataCenter(DataCenter.CountryCode.ICELAND)  # Create a single DC Only.
 
             fhp1 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=4)), mem=16)
-            h1 = Host(dc, fhp1)  # Create first low spec host
+            h1 = Host(SystemTime(0, 0), dc, fhp1)  # Create first low spec host
 
             fhp2 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=4)), mem=32)
-            h2 = Host(dc, fhp2)  # Create another high spec host
+            h2 = Host(SystemTime(0, 0), dc, fhp2)  # Create another high spec host
 
             policy = SequentialPolicy(h1, h2)
 
@@ -84,7 +87,7 @@ class Cases:
                                    run_time=30)
 
             app1 = App(ftp)  # Create a new app in line with task policy
-            policy.select_optimal_compute(app1).associate_task(app1)
+            policy.select_optimal_compute(app1).associate_task(SystemTime(0, 0), app1)
 
             compute_iter = InfRndIter(Host.all_hosts())
 
@@ -105,10 +108,10 @@ class Cases:
             dc2 = DataCenter(DataCenter.CountryCode.GREAT_BRITAIN)
 
             fhp1 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=4)), mem=16)
-            h1 = Host(dc1, fhp1)  # Create first low spec host
+            h1 = Host(SystemTime(0, 0), dc1, fhp1)  # Create first low spec host
 
             fhp2 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GENERAL, core_count=4)), mem=32)
-            h2 = Host(dc2, fhp2)  # Create another high spec host
+            h2 = Host(SystemTime(0, 0), dc2, fhp2)  # Create another high spec host
 
             policy = SequentialPolicy(h1, h2)
 
@@ -120,7 +123,7 @@ class Cases:
                                    run_time=15)
 
             app1 = App(ftp)  # Create a new app in line with task policy
-            policy.select_optimal_compute(app1).associate_task(app1)
+            policy.select_optimal_compute(app1).associate_task(SystemTime(0, 0), app1)
 
             compute_iter = InfRndIter(Host.all_hosts())
 
@@ -139,7 +142,7 @@ class Cases:
             dc1 = DataCenter(DataCenter.CountryCode.ICELAND)
 
             fhp1 = FixedHostProfile(core=Core(FixedCoreProfile(core_type=CPUType.GPU, core_count=4)), mem=10)
-            h1 = Host(dc1, fhp1)  # Create first low spec host
+            h1 = Host(SystemTime(0, 0), dc1, fhp1)  # Create first low spec host
 
             policy = SequentialPolicy(h1, h1)
 
@@ -151,7 +154,7 @@ class Cases:
                                    run_time=30)
 
             app1 = App(ftp)  # Create a new app in line with task policy
-            policy.select_optimal_compute(app1).associate_task(app1)
+            policy.select_optimal_compute(app1).associate_task(SystemTime(0, 0), app1)
 
             compute_iter = InfRndIter(Host.all_hosts())
 

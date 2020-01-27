@@ -31,14 +31,6 @@ class Case(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def properties(self) -> Dict[CaseProperty, object]:
-        """
-        A dictionary of properties for the test case.
-        :return: A dictionary of properties
-        """
-        raise NotImplementedError
-
     @classmethod
     def current_case(cls) -> 'Case':
         if cls._case is None:

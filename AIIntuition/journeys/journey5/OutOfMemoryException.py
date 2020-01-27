@@ -6,6 +6,7 @@ from AIIntuition.journeys.journey5.errorcode import ErrorCode
 from AIIntuition.journeys.journey5.log import Log
 from AIIntuition.journeys.journey5.event import FailureEvent
 from AIIntuition.journeys.journey5.jexception import JException
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class OutOfMemoryException(JException):
@@ -27,13 +28,14 @@ class OutOfMemoryException(JException):
         self._error_code = ErrorCode.OUT_OF_MEMORY
 
     def as_string(self,
+                  sys_time: SystemTime,
                   as_feature: bool = False) -> str:
         """
         The exception rendered as string, if as_feature = True then as a feature vector equivalent for use in AL/ML
         context.
         :return: Exception as string
         """
-        s = Log.log_message(FailureEvent(self, self._task, self._compute), as_feature)
+        s = Log.log_message(sys_time, FailureEvent(sys_time, self, self._task, self._compute), as_feature)
         return s
 
     @property

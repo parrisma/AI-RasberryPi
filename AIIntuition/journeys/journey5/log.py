@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from AIIntuition.journeys.journey5.event import Event, FailureEvent
+from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class Log:
@@ -25,33 +26,38 @@ class Log:
 
     @classmethod
     def log_event(cls,
+                  sys_time: SystemTime,
                   event: Event,
                   *argv) -> None:
         """
         Post a standard form log message to the current sink of the Log Class
+        :param sys_time: The current system time
         :param event: The event type
         :param argv: The components of the message body - all must support conversion to string
         """
-        log_msg = cls.log_message(event, False, *argv)
+        log_msg = cls.log_message(sys_time, event, False, *argv)
         print(log_msg)
         cls._log_to_file(log_msg)
-        log_msg_f = cls.log_message(event, True, *argv)
+        log_msg_f = cls.log_message(sys_time, event, True, *argv)
         cls._log_to_feature_file(log_msg_f)
 
     @classmethod
     def log_message(cls,
+                    sys_time: SystemTime,
                     event: Event,
                     as_features: bool,
                     *argv) -> str:
         """
         Return a standard form log message
+        :param sys_time: The current system time.
         :param event: The event type
         :param as_features: Create the log entry 'feature style' for use by AI/ML routines
         :param argv: The components of the message body - all must support conversion to string
         :return: Standard form Log message - current time stamp, event type & message body
         """
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-        log_message = ''.join((ts, Event.separator() + ' ', event.as_str(as_features)))
+        ss = sys_time.as_str(as_features)
+        log_message = ''.join((ts, Event.separator() + ' ' + ss + ' ', event.as_str(as_features)))
         for arg in argv:
             log_message = ''.join((log_message, str(arg)))
 
@@ -86,4 +92,4 @@ class Log:
 
 if __name__ == "__main__":
     ve = ValueError()
-    Log.log_event(FailureEvent(), 'Hello', 3142, 'World')
+    Log.log_event(SystemTime(0, 0), FailureEvent(), 'Hello', 3142, 'World')

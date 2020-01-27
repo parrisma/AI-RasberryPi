@@ -18,6 +18,7 @@ from AIIntuition.journeys.journey5.systemtime import SystemTime
 class Host(Compute):
 
     def __init__(self,
+                 sys_time: SystemTime,
                  data_center: DataCenter,
                  compute_profile: ComputeProfile):
         """
@@ -32,7 +33,7 @@ class Host(Compute):
         self._inf_task_iter = None  # The infinite iterate to use when running associated tasks.
         self._curr_mem = 0
         self._curr_comp = 0
-        Log.log_event(HostEvent(SystemTime(0, 0), HostEvent.HostEventType.INSTANTIATE, self), '')
+        Log.log_event(sys_time, HostEvent(sys_time, HostEvent.HostEventType.INSTANTIATE, self), '')
         return
 
     @property
@@ -98,22 +99,26 @@ class Host(Compute):
         return deepcopy(self._curr_comp)
 
     def associate_task(self,
+                       sys_time: SystemTime,
                        task: Task) -> None:
         """
         Associate the given task with this host such that the host will execute the task during it's run
         cycle.
+        :param sys_time: The current system time.
         :param task: The task to associate with the Host
         """
         self._tasks[task.id] = task
         self.__update_inf_iter()
-        Log.log_event(HostEvent(HostEvent.HostEventType.ASSOCIATE, self, task), '')
+        Log.log_event(sys_time, HostEvent(sys_time, HostEvent.HostEventType.ASSOCIATE, self, task), '')
         return
 
     def disassociate_task(self,
+                          sys_time: SystemTime,
                           task: Task) -> None:
         """
         Dis-Associate the given task with this host such that the host will NOT execute the task during it's run
         cycle.
+        :param sys_time: The current system time.
         :param task: The task to associate with the Host
         """
         if task.id not in self._tasks:
@@ -121,7 +126,7 @@ class Host(Compute):
 
         del self._tasks[task.id]
         self.__update_inf_iter()
-        Log.log_event(HostEvent(HostEvent.HostEventType.DISASSOCIATE, self, task), '')
+        Log.log_event(sys_time, HostEvent(sys_time, HostEvent.HostEventType.DISASSOCIATE, self, task), '')
 
         return
 
@@ -148,13 +153,13 @@ class Host(Compute):
         task_to_run = self.__next_task_to_execute()
 
         # Get current & required demand - return current resources
-        local_sys_time = self._data_center.local_system_time(sys_time.hour_of_day)
+        local_sys_time = self._data_center.local_system_time(sys_time)
         cd, cc, ct, md, cm = task_to_run.resource_demand(local_sys_time.hour_of_day)
         self._curr_comp = max(0, self._curr_comp - cc)  # Pay back current compute use
         self._curr_mem = max(0, self._curr_mem - cm)  # Pay back current mem use
 
-        if not self._task_done_ok(task_to_run):
-            self._check_memory_not_exhausted(task_to_run, md)
+        if not self._task_done_ok(sys_time, task_to_run):
+            self._check_memory_not_exhausted(sys_time, task_to_run, md)
             self._curr_mem += md
 
             compute_available, cd = self._compute_availability(cd, ct)
@@ -163,7 +168,8 @@ class Host(Compute):
             compute_used = task_to_run.execute(compute_available, cd)
             task_to_run.book_cost(self._data_center.compute_cost * self._core.core_cost * compute_used)
 
-            Log.log_event(HostEvent(sys_time,
+            Log.log_event(sys_time,
+                          HostEvent(sys_time,
                                     HostEvent.HostEventType.EXECUTE,
                                     compute=self,
                                     task=task_to_run),
@@ -171,6 +177,7 @@ class Host(Compute):
         return
 
     def _check_memory_not_exhausted(self,
+                                    sys_time: SystemTime,
                                     task: Task,
                                     memory_demand: int) -> None:
         """
@@ -179,10 +186,11 @@ class Host(Compute):
         if self._curr_mem + memory_demand > self._memory_available.size:
             e = OutOfMemoryException(task, self)
             task.task_failure(e)
-            self.disassociate_task(task)
+            self.disassociate_task(sys_time, task)
             raise e
 
     def _task_done_ok(self,
+                      sys_time: SystemTime,
                       task: Task) -> bool:
         """
         If the current task is done and is complete just disassociate task from host else raise
@@ -194,11 +202,11 @@ class Host(Compute):
             if task.compute_deficit > 0:
                 e = FailedToCompleteException(task, self)
                 task.task_failure(e)
-                self.disassociate_task(task)
+                self.disassociate_task(sys_time, task)
                 raise e
             else:
-                Log.log_event(HostEvent(HostEvent.HostEventType.DONE, self, task), '')
-                self.disassociate_task(task)
+                Log.log_event(sys_time, HostEvent(sys_time, HostEvent.HostEventType.DONE, self, task), '')
+                self.disassociate_task(sys_time, task)
         return done
 
     def _compute_availability(self,

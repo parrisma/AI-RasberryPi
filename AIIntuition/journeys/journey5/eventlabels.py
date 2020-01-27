@@ -42,6 +42,7 @@ class EventLabels:
                       '',
                       '',
                       '',
+                      '',
                       '']
         else:
             labels = ['DC: ',
@@ -53,6 +54,7 @@ class EventLabels:
                       'Comp: ',
                       'Comp Util %: ',
                       'Num Tasks: ',
+                      'Local Day: ',
                       'Local Hour: ']
         return labels
 

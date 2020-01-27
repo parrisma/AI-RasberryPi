@@ -10,6 +10,9 @@ from AIIntuition.journeys.journey5.systemtime import SystemTime
 
 
 class Scheduler:
+    _start_hour = 0
+    _end_hour = 24
+    _start_day = 0
 
     def __init__(self,
                  test_case: Case):
@@ -28,34 +31,38 @@ class Scheduler:
         """
         Run the test case given
         """
-        Log.log_event(SchedulerEvent(SystemTime(0, 0), SchedulerEvent.SchedulerEventType.START))
+        st = SystemTime(self._start_day, self._start_hour)
+        Log.log_event(st, SchedulerEvent(st, SchedulerEvent.SchedulerEventType.START))
 
         for day in range(0, self._num_run_days):
-            Log.log_event(SchedulerEvent(SystemTime(day, 0), SchedulerEvent.SchedulerEventType.NEW_DAY), str(day + 1))
-            for gmt_hour_of_day in range(0, 23):
+            st = SystemTime(day, self._start_hour)
+            Log.log_event(st, SchedulerEvent(st, SchedulerEvent.SchedulerEventType.NEW_DAY))
+            for gmt_hour_of_day in range(self._start_hour, self._end_hour):
                 sys_time = SystemTime(day, gmt_hour_of_day)
                 for c in range(0, self._num_hosts):
                     hst = self.next_compute()
                     for i in range(0, hst.num_associated_task):
                         try:
-                            hst.run_next_task(gmt_hour_of_day)
+                            hst.run_next_task(sys_time=sys_time)
                         except (OutOfMemoryException, FailedToCompleteException) as e:
                             Log.log_event(FailureEvent(sys_time=sys_time, exception=e, compute=e.compute, task=e.task))
-                            self._policy.select_optimal_compute(e.task).associate_task(e.task)  # re schedule
-            self._log_host_and_task_status(day)
-        Log.log_event(SchedulerEvent(SystemTime(self._num_run_days + 1, 0), SchedulerEvent.SchedulerEventType.COMPLETE))
+                            self._policy.select_optimal_compute(e.task).associate_task(sys_time, e.task)  # re schedule
+            self._log_host_and_task_status(st)
+        st = SystemTime(self._num_run_days + 1, 0)
+        Log.log_event(st, SchedulerEvent(st, SchedulerEvent.SchedulerEventType.COMPLETE))
         return
 
-    def _log_host_and_task_status(self,
-                                  day: int) -> None:
+    @staticmethod
+    def _log_host_and_task_status(sys_time: SystemTime) -> None:
         """
         Log the current state of all hosts and all of their tasks
+        :param sys_time: The current system time.
         :param day: The current scheduler day
         """
         for h in Host.all_hosts():
-            Log.log_event(HostEvent(SystemTime(day, 0), HostEvent.HostEventType.STATUS, h))
+            Log.log_event(sys_time, HostEvent(sys_time, HostEvent.HostEventType.STATUS, h))
             for t in h.all_tasks():
-                Log.log_event(TaskEvent(SystemTime(day, 0), TaskEvent.TaskEventType.STATUS, t))
+                Log.log_event(sys_time, TaskEvent(sys_time, TaskEvent.TaskEventType.STATUS, t))
 
     def next_compute(self) -> Compute:
         """
