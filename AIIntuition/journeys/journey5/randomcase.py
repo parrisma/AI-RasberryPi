@@ -45,7 +45,7 @@ class RandomCase(Case):
         for i in range(0, cls._num_hosts):
             dc = DataCenter.next_data_center_by_p_dist()  # Pick a data centre according to DC distribution
             rhp = RandomHostProfile()
-            _ = Host(dc, rhp)  # Create a Host in the chosen Data Centre
+            _ = Host(SystemTime(0, 0), dc, rhp)  # Create a Host in the chosen Data Centre
 
         for i in range(0, cls._num_apps):
             rtp = RandomTaskProfile()

@@ -36,6 +36,7 @@ class Event(ABC):
     _seqm_task = SeqMap(seq_name='Task Id')
     _seqm_taskt = SeqMap(seq_name='Task Type')
     _seqm_taskd = SeqMap(seq_name='Task Done')
+    _seqm_failt = SeqMap(seq_name='Failure Type')
 
     @classmethod
     def dump_feature_maps(cls):
@@ -157,7 +158,7 @@ class Event(ABC):
         :return: List of compute property labels, List of corresponding exception property values as string
         """
         labels = EventLabels.exception_labels(as_feature)
-        props = [exception.__class__.__name__]
+        props = [cls._render(str, cls._seqm_failt, exception.__class__.__name__, as_feature)]
 
         return labels, props
 
@@ -266,7 +267,6 @@ class Event(ABC):
 
 
 class FailureEvent(Event):
-    _seqm_fail_event_type = SeqMap(seq_name='Failure Event Type')
 
     def __init__(self,
                  sys_time: SystemTime,
@@ -291,7 +291,7 @@ class FailureEvent(Event):
         :param as_feature: If true render in feature vector format
         :return: Event as string
         """
-        preamble = Event.preamble(self, self._exception_class, self._seqm_fail_event_type, as_feature)
+        preamble = Event.preamble(self, self._exception_class, self._seqm_failt, as_feature)
         return Event.task_and_comp_to_str(self._sys_time, preamble, self._task, self._compute, self._exception,
                                           as_feature)
 
@@ -300,7 +300,7 @@ class FailureEvent(Event):
         """
         Print to stdout the current state of all SeqMaps
         """
-        print(cls._seqm_fail_event_type)
+        print(cls._seqm_failt)
         return
 
 

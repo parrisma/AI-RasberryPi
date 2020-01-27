@@ -17,7 +17,7 @@ class SystemTime:
     def as_str(self,
                as_feature: bool):
         if as_feature:
-            return str(self.day_of_year) + GlobSym.separator() + str(self.hour_of_day)
+            return str(self.day_of_year) + GlobSym.separator() + str(self.hour_of_day) + GlobSym.separator()
         return 'Sys Day: ' + str(self.day_of_year) + ' Sys Hour: ' + str(self.hour_of_day)
 
     @property

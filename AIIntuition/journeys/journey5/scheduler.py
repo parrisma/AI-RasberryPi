@@ -45,7 +45,7 @@ class Scheduler:
                         try:
                             hst.run_next_task(sys_time=sys_time)
                         except (OutOfMemoryException, FailedToCompleteException) as e:
-                            Log.log_event(FailureEvent(sys_time=sys_time, exception=e, compute=e.compute, task=e.task))
+                            Log.log_event(sys_time, FailureEvent(sys_time, exception=e, compute=e.compute, task=e.task))
                             self._policy.select_optimal_compute(e.task).associate_task(sys_time, e.task)  # re schedule
             self._log_host_and_task_status(st)
         st = SystemTime(self._num_run_days + 1, 0)
